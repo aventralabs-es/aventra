@@ -1250,8 +1250,9 @@ h3 {
   }
 }
 .market-quote-strip {
+  position: relative;
   width: 100%;
-  min-height: 29px;
+  height: 38px;
   overflow: hidden;
   background: var(--surface);
 }
@@ -1260,6 +1261,7 @@ h3 {
 .market-quote-strip .tradingview-widget-container__widget {
   width: 100% !important;
   height: 38px !important;
+  overflow: hidden !important;
 }
 
 .market-quote-strip iframe {
@@ -1271,6 +1273,7 @@ h3 {
 .market-quote-strip script {
   display: none;
 }
+
 
 
 
