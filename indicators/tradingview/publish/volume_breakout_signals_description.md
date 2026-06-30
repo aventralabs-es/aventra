@@ -14,7 +14,7 @@ The indicator is designed for traders who want to identify price breakouts that 
 - Relative volume confirmation using volume divided by volume average
 - Volume MA Length input, default 21
 - Minimum Relative Volume input, default 1.50
-- Optional trend filter using selectable-timeframe EMA
+- Trend filter using selectable-timeframe EMA, enabled by default
 - Trend MA Timeframe input, default 1D
 - Optional Trend MA line display when Use Trend Filter is enabled
 - Historical signal markers and labels, enabled by default
@@ -33,7 +33,7 @@ The indicator is designed for traders who want to identify price breakouts that 
 - Minimum Breakout ATR: minimum breakout distance measured by ATR, default 0.10
 - Volume MA Length: volume average length used for relative volume, default 21
 - Minimum Relative Volume: minimum volume divided by volume average required for signals, default 1.50
-- Use Trend Filter: requires bullish signals above EMA and bearish signals below EMA, disabled by default
+- Use Trend Filter: requires bullish signals above EMA and bearish signals below EMA, enabled by default
 - Trend MA Length: EMA length used by the optional trend filter, default 55
 - Trend MA Timeframe: timeframe used for the trend filter EMA, default 1D
 - Show Trend MA: displays the trend filter EMA when Use Trend Filter is enabled, enabled by default

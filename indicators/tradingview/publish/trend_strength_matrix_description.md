@@ -12,6 +12,7 @@ It uses multiple technical components to produce a configurable trend score. The
 - Optional ATR volatility filter
 - Bullish, bearish, and neutral trend states
 - Trend fill between EMAs
+- Configurable trend fill and background colors
 - Optional trend-based bar coloring
 - Optional trend background shading
 - Trend strength matrix table
@@ -34,8 +35,11 @@ It uses multiple technical components to produce a configurable trend score. The
 - Minimum ATR %: minimum ATR percentage required when the filter is enabled
 - Minimum Trend Score: minimum score required for bullish or bearish state
 - Show Trend Change Labels: toggles BULLISH/BEARISH/NEUTRAL labels
+- Trend Label Size: controls the trend change label font size
 - Color Bars by Trend: toggles trend-based candle coloring
-- Show Trend Background: toggles background shading
+- Show Trend Background: toggles background shading, enabled by default
+- Bullish/Bearish/Neutral Fill Color: controls the EMA fill colors
+- Bullish/Bearish/Neutral Background Color: controls the trend background colors
 - Show Matrix Table: toggles the trend strength matrix table
 
 ## Signal Logic

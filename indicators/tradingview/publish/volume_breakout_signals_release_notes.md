@@ -1,3 +1,7 @@
+Version 1.0.2
+
+- Enabled Use Trend Filter by default
+
 Version 1.0.1
 
 - Signal label text now uses the selected bullish or bearish signal color for better visual consistency.

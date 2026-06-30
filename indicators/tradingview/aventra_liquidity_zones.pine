@@ -1,5 +1,5 @@
 //@version=6
-// Aventra Version: 1.0.0
+// Aventra Version: 1.0.3
 indicator("Liquidity Zones [Aventra]", shorttitle="Liquidity Zones [Aventra]", overlay=true, max_boxes_count=100, max_labels_count=100)
 
 calculation_timeframe = input.timeframe("", "Calculation Timeframe")
@@ -12,9 +12,9 @@ max_zones = input.int(8, "Maximum Zones", minval=1, maxval=25)
 show_zone_labels = input.bool(true, "Show Zone Labels")
 show_sweep_labels = input.bool(true, "Show Sweep Labels")
 keep_swept_zones = input.bool(true, "Keep Swept Zones")
-buy_side_color = input.color(color.red, "Buy-Side Liquidity Color")
-sell_side_color = input.color(color.lime, "Sell-Side Liquidity Color")
-swept_color = input.color(color.gray, "Swept Zone Color")
+buy_side_color = input.color(color.new(color.red, 50), "Buy-Side Liquidity Color")
+sell_side_color = input.color(color.new(color.lime, 50), "Sell-Side Liquidity Color")
+swept_color = input.color(color.new(color.gray, 50), "Swept Zone Color")
 
 use_chart_timeframe = calculation_timeframe == ""
 request_timeframe = use_chart_timeframe ? timeframe.period : calculation_timeframe
@@ -64,13 +64,13 @@ trim_zones(array<box> _boxes, array<float> _tops, array<float> _bottoms, array<b
         label.delete(array.shift(_labels))
 
 add_zone(array<box> _boxes, array<float> _tops, array<float> _bottoms, array<bool> _active, array<label> _labels, int _left_bar, float _top, float _bottom, color _color, string _text) =>
-    box new_box = box.new(_left_bar, _top, bar_index, _bottom, border_color=color.new(_color, 0), bgcolor=color.new(_color, 85), extend=extend.right)
+    box new_box = box.new(_left_bar, _top, bar_index, _bottom, border_color=color.new(_color, 50), bgcolor=color.new(_color, 85), extend=extend.right)
     array.push(_boxes, new_box)
     array.push(_tops, _top)
     array.push(_bottoms, _bottom)
     array.push(_active, true)
     if show_zone_labels
-        label new_label = label.new(bar_index, (_top + _bottom) / 2.0, _text, style=label.style_label_left, color=color.new(_color, 0), textcolor=color.white, size=size.small)
+        label new_label = label.new(bar_index, (_top + _bottom) / 2.0, _text, style=label.style_label_left, color=color.new(_color, 50), textcolor=color.white, size=size.small)
         array.push(_labels, new_label)
     trim_zones(_boxes, _tops, _bottoms, _active, _labels)
 
@@ -135,8 +135,8 @@ if show_zone_labels
         for i = 0 to array.size(sell_side_labels) - 1
             label.set_x(array.get(sell_side_labels, i), bar_index)
 
-plotshape(show_sweep_labels and buy_side_sweep, title="Buy-Side Sweep", text="BUY-SIDE SWEEP", style=shape.labeldown, location=location.abovebar, color=buy_side_color, textcolor=color.white, size=size.small)
-plotshape(show_sweep_labels and sell_side_sweep, title="Sell-Side Sweep", text="SELL-SIDE SWEEP", style=shape.labelup, location=location.belowbar, color=sell_side_color, textcolor=color.black, size=size.small)
+plotshape(show_sweep_labels and buy_side_sweep, title="Buy-Side Sweep", text="Buy-Side Sweep", style=shape.labeldown, location=location.abovebar, color=color.new(buy_side_color, 50), textcolor=color.white, size=size.small)
+plotshape(show_sweep_labels and sell_side_sweep, title="Sell-Side Sweep", text="Sell-Side Sweep", style=shape.labelup, location=location.belowbar, color=color.new(sell_side_color, 50), textcolor=color.white, size=size.small)
 
 alertcondition(buy_side_sweep, title="Liquidity Zones [Aventra] Buy-Side Sweep", message="Liquidity Zones [Aventra]: Price swept buy-side liquidity.")
 alertcondition(sell_side_sweep, title="Liquidity Zones [Aventra] Sell-Side Sweep", message="Liquidity Zones [Aventra]: Price swept sell-side liquidity.")

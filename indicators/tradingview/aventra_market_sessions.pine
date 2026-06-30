@@ -1,9 +1,10 @@
-﻿//@version=6
-// Aventra Version: 1.1.2
+//@version=6
+// Aventra Version: 1.1.3
 indicator("Market Sessions [Aventra]", shorttitle="Market Sessions [Aventra]", overlay=true, max_boxes_count=500, max_lines_count=500, max_labels_count=500)
 
 session_timezone = input.string("Europe/Paris", "Session Timezone", options=["Etc/UTC", "America/New_York", "Europe/London", "Europe/Madrid", "Europe/Istanbul", "Europe/Paris", "Asia/Tokyo", "Asia/Hong_Kong"])
 show_only_intraday = input.bool(true, "Show Only Intraday")
+show_intraday_warning = input.bool(true, "Show Intraday Warning")
 show_asia = input.bool(true, "Show Asia Session")
 show_london = input.bool(true, "Show London Session")
 show_new_york = input.bool(true, "Show New York Session")
@@ -13,13 +14,15 @@ new_york_session = input.session("1400-2300", "New York Session")
 maximum_sessions = input.int(50, "Maximum Sessions", minval=0, maxval=200)
 show_high_low = input.bool(true, "Show High / Low")
 show_high_low_labels = input.bool(false, "Show High / Low Labels")
-show_session_labels = input.bool(false, "Show Session Labels")
+show_session_labels = input.bool(true, "Show Session Labels")
 asia_color = input.color(color.new(color.teal, 80), "Asia Session Color")
 london_color = input.color(color.new(color.orange, 80), "London Session Color")
 new_york_color = input.color(color.new(color.blue, 80), "New York Session Color")
 high_line_color = input.color(color.new(color.gray, 35), "High Line Color")
 low_line_color = input.color(color.new(color.gray, 35), "Low Line Color")
 label_color = input.color(color.new(color.black, 50), "Label Color")
+
+var table intraday_warning_table = table.new(position.top_right, 1, 1)
 
 var array<box> asia_boxes = array.new<box>()
 var array<line> asia_high_lines = array.new<line>()
@@ -70,6 +73,7 @@ session_active(string _session) =>
     not na(time(timeframe.period, _session, session_timezone))
 
 sessions_allowed = not show_only_intraday or timeframe.isintraday
+show_intraday_warning_now = show_intraday_warning and show_only_intraday and not timeframe.isintraday
 asia_active = sessions_allowed and show_asia and session_active(asia_session)
 london_active = sessions_allowed and show_london and session_active(london_session)
 new_york_active = sessions_allowed and show_new_york and session_active(new_york_session)
@@ -268,6 +272,9 @@ new_york_started_alert = new_york_start
 bgcolor(asia_active ? asia_color : na)
 bgcolor(london_active ? london_color : na)
 bgcolor(new_york_active ? new_york_color : na)
+
+if barstate.islast
+    table.cell(intraday_warning_table, 0, 0, show_intraday_warning_now ? "Market sessions are hidden on non-intraday charts.\nUse an intraday timeframe or disable Show Only Intraday." : "", text_color=show_intraday_warning_now ? color.white : color.new(color.white, 100), bgcolor=show_intraday_warning_now ? color.new(color.orange, 15) : color.new(color.black, 100), text_size=size.small)
 
 alertcondition(asia_started_alert, title="Market Sessions [Aventra] Asia Session Started", message="Market Sessions [Aventra]: Asia session started.")
 alertcondition(london_started_alert, title="Market Sessions [Aventra] London Session Started", message="Market Sessions [Aventra]: London session started.")

@@ -1,15 +1,15 @@
 //@version=6
-// Aventra Version: 1.0.3
+// Aventra Version: 1.0.4
 indicator("Order Blocks & Breakers [Aventra]", shorttitle="Order Blocks & Breakers [Aventra]", overlay=true, max_boxes_count=500, max_lines_count=500, max_labels_count=500)
 
 calculation_timeframe = input.timeframe("", "Calculation Timeframe")
 swing_length = input.int(5, "Swing Length", minval=2)
 order_block_lookback = input.int(20, "Order Block Lookback", minval=1, maxval=100)
 show_order_blocks = input.bool(true, "Show Order Blocks")
-show_breaker_blocks = input.bool(false, "Show Breaker Blocks")
+show_breaker_blocks = input.bool(true, "Show Breaker Blocks")
 maximum_order_blocks = input.int(50, "Maximum Order Blocks", minval=0, maxval=200)
 maximum_breaker_blocks = input.int(50, "Maximum Breaker Blocks", minval=0, maxval=200)
-show_labels = input.bool(false, "Show Labels")
+show_labels = input.bool(true, "Show Labels")
 show_equilibrium = input.bool(true, "Show Equilibrium")
 keep_mitigated_blocks = input.bool(false, "Keep Mitigated Blocks")
 show_mitigation_labels = input.bool(false, "Show Mitigation Labels")

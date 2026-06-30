@@ -1,4 +1,4 @@
-﻿Market Sessions [Aventra] is a Pine Script v6 indicator that highlights Asia, London, and New York trading sessions with lightweight background coloring, session high / low lines, and optional labels.
+Market Sessions [Aventra] is a Pine Script v6 indicator that highlights Asia, London, and New York trading sessions with lightweight background coloring, session high / low lines, and optional labels.
 
 It is designed to help traders separate market activity by time window, monitor session ranges, and compare liquidity behavior across major trading periods directly on the chart.
 
@@ -10,16 +10,18 @@ It is designed to help traders separate market activity by time window, monitor 
 - Custom session time inputs
 - Session high and low tracking
 - Optional session high and low price labels
-- Optional centered session labels, hidden by default
+- Optional centered session labels, enabled by default
 - Configurable maximum visible sessions, default 50
 - Lightweight background-only session display
+- Optional non-intraday warning when Show Only Intraday hides sessions
 - Editable session colors with low visual dominance
 - TradingView alert conditions for session starts
 
 ## Inputs
 
 - Session Timezone: timezone used to calculate session windows, default Europe/Paris
-- Show Only Intraday: hides session boxes on daily and higher timeframes, enabled by default
+- Show Only Intraday: hides session display on daily and higher timeframes, enabled by default
+- Show Intraday Warning: displays a small warning on non-intraday charts when Show Only Intraday hides sessions, enabled by default
 - Show Asia Session: toggles Asia session display, enabled by default
 - Show London Session: toggles London session display, enabled by default
 - Show New York Session: toggles New York session display, enabled by default
@@ -29,7 +31,7 @@ It is designed to help traders separate market activity by time window, monitor 
 - Maximum Sessions: maximum sessions kept per session type, default 50 and up to 200
 - Show High / Low: toggles session high and low lines, enabled by default
 - Show High / Low Labels: toggles session high and low price labels, hidden by default
-- Show Session Labels: toggles centered session labels, hidden by default
+- Show Session Labels: toggles centered session labels, enabled by default
 - Asia Session Color: Asia session background color, default roughly 20 percent visible opacity
 - London Session Color: London session background color, default roughly 20 percent visible opacity
 - New York Session Color: New York session background color, default roughly 20 percent visible opacity

@@ -1,3 +1,7 @@
+Version 1.0.1
+
+- Reduced default visual opacity for moving average colors, trend fill, crossover markers, and optional trend-based bar coloring.
+
 Initial release.
 
 - Added configurable fast and slow moving averages

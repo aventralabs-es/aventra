@@ -1,5 +1,5 @@
 //@version=6
-// Aventra Version: 1.0.0
+// Aventra Version: 1.0.1
 indicator("MA Crossover Signals [Aventra]", shorttitle="MA Crossover Signals [Aventra]", overlay=true)
 
 source = input.source(close, "Source")
@@ -31,18 +31,18 @@ trend_up = fast_ma >= slow_ma
 buy_signal = ta.crossover(fast_ma, slow_ma)
 sell_signal = ta.crossunder(fast_ma, slow_ma)
 
-fast_color = trend_up ? color.lime : color.red
-slow_color = color.new(color.gray, 0)
-fill_color = trend_up ? color.new(color.lime, 85) : color.new(color.red, 85)
+fast_color = trend_up ? color.new(color.lime, 50) : color.new(color.red, 50)
+slow_color = color.new(color.gray, 50)
+fill_color = trend_up ? color.new(color.lime, 92) : color.new(color.red, 92)
 
 fast_plot = plot(fast_ma, "Fast MA", color=fast_color, linewidth=2)
 slow_plot = plot(slow_ma, "Slow MA", color=slow_color, linewidth=2)
 fill(fast_plot, slow_plot, color=fill_color, title="Trend Fill")
 
-plotshape(show_signals and buy_signal, title="Buy Signal", text="BUY", style=shape.labelup, location=location.belowbar, color=color.lime, textcolor=color.black, size=size.small)
-plotshape(show_signals and sell_signal, title="Sell Signal", text="SELL", style=shape.labeldown, location=location.abovebar, color=color.red, textcolor=color.white, size=size.small)
+plotshape(show_signals and buy_signal, title="Buy Signal", text="BUY", style=shape.labelup, location=location.belowbar, color=color.new(color.lime, 50), textcolor=color.black, size=size.small)
+plotshape(show_signals and sell_signal, title="Sell Signal", text="SELL", style=shape.labeldown, location=location.abovebar, color=color.new(color.red, 50), textcolor=color.white, size=size.small)
 
-barcolor(color_bars ? (trend_up ? color.new(color.lime, 70) : color.new(color.red, 70)) : na)
+barcolor(color_bars ? (trend_up ? color.new(color.lime, 85) : color.new(color.red, 85)) : na)
 
 alertcondition(buy_signal, title="MA Crossover Signals [Aventra] Buy", message="MA Crossover Signals [Aventra]: Fast moving average crossed above the slow moving average.")
 alertcondition(sell_signal, title="MA Crossover Signals [Aventra] Sell", message="MA Crossover Signals [Aventra]: Fast moving average crossed below the slow moving average.")

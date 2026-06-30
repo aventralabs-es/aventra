@@ -1,5 +1,5 @@
 //@version=6
-// Aventra Version: 1.2.1
+// Aventra Version: 1.2.2
 indicator("Breakout Retest Signals [Aventra]", shorttitle="Breakout Retest Signals [Aventra]", overlay=true, max_lines_count=500, max_labels_count=500, max_boxes_count=200, max_bars_back=5000)
 
 calculation_timeframe = input.timeframe("", "Calculation Timeframe")
@@ -12,7 +12,7 @@ minimum_breakout_atr = input.float(0.10, "Minimum Breakout ATR", minval=0.0, ste
 confirmation_buffer_atr = input.float(0.05, "Confirmation Buffer ATR", minval=0.0, step=0.01)
 breakout_mode = input.string("Close Break", "Breakout Mode", options=["Close Break", "Wick Break"])
 confirmation_mode = input.string("Balanced", "Confirmation Mode", options=["Aggressive", "Balanced", "Conservative"])
-require_trend_filter = input.bool(false, "Use Trend Filter")
+require_trend_filter = input.bool(true, "Use Trend Filter")
 trend_ma_length = input.int(55, "Trend MA Length", minval=1)
 trend_ma_timeframe = input.timeframe("D", "Trend MA Timeframe")
 show_trend_ma = input.bool(true, "Show Trend MA")

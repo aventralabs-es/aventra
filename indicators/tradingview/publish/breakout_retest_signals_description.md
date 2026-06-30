@@ -12,7 +12,7 @@ The indicator is designed for price action traders who want to wait for a struct
 - ATR-based retest tolerance around the broken level
 - ATR-based minimum breakout filter
 - Confirmation modes: Aggressive, Balanced, and Conservative
-- Optional trend filter using selectable-timeframe EMA
+- Trend filter, enabled by default using selectable-timeframe EMA
 - Optional relative volume filter for confirmation candles
 - Optional Trend MA line display when Use Trend Filter is enabled
 - Historical signal markers and labels, enabled by default
@@ -35,7 +35,7 @@ The indicator is designed for price action traders who want to wait for a struct
 - Confirmation Buffer ATR: extra close distance required in Conservative mode, default 0.05
 - Breakout Mode: Close Break or Wick Break, default Close Break
 - Confirmation Mode: signal strictness, default Balanced
-- Use Trend Filter: requires bullish signals above EMA and bearish signals below EMA, disabled by default
+- Use Trend Filter: requires bullish signals above EMA and bearish signals below EMA, enabled by default
 - Trend MA Length: EMA length used by the optional trend filter, default 55
 - Trend MA Timeframe: timeframe used for the trend filter EMA, default 1D
 - Show Trend MA: displays the trend filter EMA when Use Trend Filter is enabled, enabled by default

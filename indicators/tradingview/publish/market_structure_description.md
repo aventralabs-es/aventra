@@ -13,6 +13,7 @@ It is designed to help traders follow market structure shifts, identify bullish 
 - BOS/CHoCH structure labels
 - Structure break lines
 - Current swing high/low levels
+- Separate swing high and swing low color controls
 - TradingView alert conditions
 
 ## Inputs
@@ -27,6 +28,8 @@ It is designed to help traders follow market structure shifts, identify bullish 
 - Bullish Color: bullish structure color
 - Bearish Color: bearish structure color
 - Neutral Color: neutral color reserved for future visual states
+- Swing High Color: color for SH labels and active swing high levels
+- Swing Low Color: color for SL labels and active swing low levels
 - Line Width: structure break line width
 
 ## Signal Logic

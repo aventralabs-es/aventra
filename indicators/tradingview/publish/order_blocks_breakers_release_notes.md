@@ -1,3 +1,8 @@
+Version 1.0.4
+
+- Enabled Show Breaker Blocks by default
+- Enabled Show Labels by default
+
 Version 1.0.3
 
 - Updated default Order Block Label Color to orange with roughly 40 percent visible opacity

@@ -1,4 +1,9 @@
-﻿Version 1.1.2
+Version 1.1.3
+
+- Enabled Show Session Labels by default
+- Added an optional intraday warning when sessions are hidden on non-intraday charts
+
+Version 1.1.2
 
 - Added Show High / Low Labels input, disabled by default
 - Added optional price labels for each session high and low line

@@ -1,3 +1,7 @@
+Version 1.2.2
+
+- Enabled Use Trend Filter by default
+
 Version 1.2.1
 
 - Changed default Trend MA Color to blue with 30% opacity

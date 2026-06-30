@@ -5,11 +5,14 @@ It is designed to help traders monitor important price areas, detect breakout an
 ## Features
 
 - Pivot-based dynamic support and resistance levels
+- Optional grouping of nearby support/resistance levels into cleaner zones
 - Configurable calculation timeframe, defaulting to the chart timeframe
 - Configurable pivot left/right bars
-- Configurable maximum visible levels
+- Configurable maximum visible levels or zones
+- Configurable ATR-based zone tolerance for nearby levels
+- Optional zone midline
 - Optional support/resistance price labels
-- BREAKOUT/BREAKDOWN signal labels
+- Breakout/Breakdown signal labels
 - TradingView alert conditions
 
 ## Inputs
@@ -17,9 +20,15 @@ It is designed to help traders monitor important price areas, detect breakout an
 - Calculation Timeframe: empty by default, which means chart timeframe
 - Pivot Left Bars: number of bars to the left of a pivot point
 - Pivot Right Bars: number of bars to the right of a pivot point
-- Maximum Levels: maximum number of support and resistance levels kept on chart
-- Show Breakout Labels: toggles BREAKOUT/BREAKDOWN labels
+- Maximum Levels: maximum number of support/resistance levels or zones kept on chart
+- Group Nearby Levels: combines close support/resistance levels into zones
+- Zone ATR Length: ATR period used for zone grouping tolerance
+- Zone Tolerance ATR: ATR multiple used to decide whether nearby levels belong to the same zone
+- Show Zone Midline: toggles the midpoint line inside grouped zones
+- Show Breakout Labels: toggles Breakout/Breakdown labels
+- Break Label Size: controls the Breakout/Breakdown marker font size
 - Show Price Labels: toggles support/resistance price labels
+- Level Label Size: controls the support/resistance and zone label font size
 - Resistance Color: resistance line and label color
 - Support Color: support line and label color
 - Line Width: support/resistance line width

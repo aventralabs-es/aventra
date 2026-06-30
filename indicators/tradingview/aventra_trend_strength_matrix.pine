@@ -1,5 +1,5 @@
 //@version=6
-// Aventra Version: 1.0.0
+// Aventra Version: 1.0.4
 indicator("Trend Strength Matrix [Aventra]", shorttitle="Trend Strength Matrix [Aventra]", overlay=true)
 
 source = input.source(close, "Source")
@@ -17,9 +17,16 @@ atr_length = input.int(14, "ATR Length", minval=1)
 minimum_atr_percent = input.float(0.5, "Minimum ATR %", minval=0.0, step=0.1)
 minimum_score = input.int(2, "Minimum Trend Score", minval=1, maxval=3)
 show_trend_labels = input.bool(true, "Show Trend Change Labels")
+trend_label_size = input.string("Tiny", "Trend Label Size", options=["Tiny", "Small", "Normal", "Large"])
 color_bars = input.bool(true, "Color Bars by Trend")
-show_background = input.bool(false, "Show Trend Background")
+show_background = input.bool(true, "Show Trend Background")
 show_matrix_table = input.bool(true, "Show Matrix Table")
+bullish_fill_color = input.color(color.new(color.lime, 85), "Bullish Fill Color")
+bearish_fill_color = input.color(color.new(color.red, 85), "Bearish Fill Color")
+neutral_fill_color = input.color(color.new(color.gray, 90), "Neutral Fill Color")
+bullish_background_color = input.color(color.new(color.lime, 88), "Bullish Background Color")
+bearish_background_color = input.color(color.new(color.red, 88), "Bearish Background Color")
+neutral_background_color = input.color(color.new(color.gray, 92), "Neutral Background Color")
 
 use_chart_timeframe = calculation_timeframe == ""
 request_timeframe = use_chart_timeframe ? timeframe.period : calculation_timeframe
@@ -62,15 +69,31 @@ bullish_color = color.lime
 bearish_color = color.red
 neutral_color = color.gray
 trend_color = bullish_trend ? bullish_color : bearish_trend ? bearish_color : neutral_color
-background_color = bullish_trend ? color.new(bullish_color, 88) : bearish_trend ? color.new(bearish_color, 88) : color.new(neutral_color, 92)
+background_color = bullish_trend ? bullish_background_color : bearish_trend ? bearish_background_color : neutral_background_color
 
-fast_plot = plot(fast_ema, "Fast EMA", color=color.new(color.teal, 0), linewidth=2)
-slow_plot = plot(slow_ema, "Slow EMA", color=color.new(color.orange, 0), linewidth=2)
-fill(fast_plot, slow_plot, color=bullish_trend ? color.new(bullish_color, 85) : bearish_trend ? color.new(bearish_color, 85) : color.new(neutral_color, 90), title="Trend Fill")
+fast_plot = plot(fast_ema, "Fast EMA", color=color.new(color.teal, 50), linewidth=2)
+slow_plot = plot(slow_ema, "Slow EMA", color=color.new(color.orange, 50), linewidth=2)
+fill(fast_plot, slow_plot, color=bullish_trend ? bullish_fill_color : bearish_trend ? bearish_fill_color : neutral_fill_color, title="Trend Fill")
 
-plotshape(show_trend_labels and bullish_start, title="Bullish Trend Signal", text="BULLISH", style=shape.labelup, location=location.belowbar, color=bullish_color, textcolor=color.black, size=size.small)
-plotshape(show_trend_labels and bearish_start, title="Bearish Trend Signal", text="BEARISH", style=shape.labeldown, location=location.abovebar, color=bearish_color, textcolor=color.white, size=size.small)
-plotshape(show_trend_labels and neutral_start, title="Neutral Trend Signal", text="NEUTRAL", style=shape.circle, location=location.top, color=neutral_color, textcolor=color.white, size=size.tiny)
+trend_label_tiny = trend_label_size == "Tiny"
+trend_label_small = trend_label_size == "Small"
+trend_label_normal = trend_label_size == "Normal"
+trend_label_large = trend_label_size == "Large"
+
+plotshape(show_trend_labels and bullish_start and trend_label_tiny, title="Bullish Trend Signal Tiny", text="BULLISH", style=shape.labelup, location=location.belowbar, color=color.new(bullish_color, 50), textcolor=color.white, size=size.tiny)
+plotshape(show_trend_labels and bullish_start and trend_label_small, title="Bullish Trend Signal Small", text="BULLISH", style=shape.labelup, location=location.belowbar, color=color.new(bullish_color, 50), textcolor=color.white, size=size.small)
+plotshape(show_trend_labels and bullish_start and trend_label_normal, title="Bullish Trend Signal Normal", text="BULLISH", style=shape.labelup, location=location.belowbar, color=color.new(bullish_color, 50), textcolor=color.white, size=size.normal)
+plotshape(show_trend_labels and bullish_start and trend_label_large, title="Bullish Trend Signal Large", text="BULLISH", style=shape.labelup, location=location.belowbar, color=color.new(bullish_color, 50), textcolor=color.white, size=size.large)
+
+plotshape(show_trend_labels and bearish_start and trend_label_tiny, title="Bearish Trend Signal Tiny", text="BEARISH", style=shape.labeldown, location=location.abovebar, color=color.new(bearish_color, 50), textcolor=color.white, size=size.tiny)
+plotshape(show_trend_labels and bearish_start and trend_label_small, title="Bearish Trend Signal Small", text="BEARISH", style=shape.labeldown, location=location.abovebar, color=color.new(bearish_color, 50), textcolor=color.white, size=size.small)
+plotshape(show_trend_labels and bearish_start and trend_label_normal, title="Bearish Trend Signal Normal", text="BEARISH", style=shape.labeldown, location=location.abovebar, color=color.new(bearish_color, 50), textcolor=color.white, size=size.normal)
+plotshape(show_trend_labels and bearish_start and trend_label_large, title="Bearish Trend Signal Large", text="BEARISH", style=shape.labeldown, location=location.abovebar, color=color.new(bearish_color, 50), textcolor=color.white, size=size.large)
+
+plotshape(show_trend_labels and neutral_start and trend_label_tiny, title="Neutral Trend Signal Tiny", text="NEUTRAL", style=shape.circle, location=location.top, color=color.new(neutral_color, 50), textcolor=color.white, size=size.tiny)
+plotshape(show_trend_labels and neutral_start and trend_label_small, title="Neutral Trend Signal Small", text="NEUTRAL", style=shape.circle, location=location.top, color=color.new(neutral_color, 50), textcolor=color.white, size=size.small)
+plotshape(show_trend_labels and neutral_start and trend_label_normal, title="Neutral Trend Signal Normal", text="NEUTRAL", style=shape.circle, location=location.top, color=color.new(neutral_color, 50), textcolor=color.white, size=size.normal)
+plotshape(show_trend_labels and neutral_start and trend_label_large, title="Neutral Trend Signal Large", text="NEUTRAL", style=shape.circle, location=location.top, color=color.new(neutral_color, 50), textcolor=color.white, size=size.large)
 
 barcolor(color_bars ? color.new(trend_color, 65) : na)
 bgcolor(show_background ? background_color : na)

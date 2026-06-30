@@ -1,5 +1,5 @@
 //@version=6
-// Aventra Version: 1.0.1
+// Aventra Version: 1.0.2
 indicator("Volume Breakout Signals [Aventra]", shorttitle="Volume Breakout Signals [Aventra]", overlay=true, max_lines_count=500, max_labels_count=500, max_bars_back=5000)
 
 calculation_timeframe = input.timeframe("", "Calculation Timeframe")
@@ -11,7 +11,7 @@ atr_length = input.int(14, "ATR Length", minval=1)
 minimum_breakout_atr = input.float(0.10, "Minimum Breakout ATR", minval=0.0, step=0.01)
 volume_ma_length = input.int(21, "Volume MA Length", minval=1)
 minimum_relative_volume = input.float(1.50, "Minimum Relative Volume", minval=0.0, step=0.05)
-use_trend_filter = input.bool(false, "Use Trend Filter")
+use_trend_filter = input.bool(true, "Use Trend Filter")
 trend_ma_length = input.int(55, "Trend MA Length", minval=1)
 trend_ma_timeframe = input.timeframe("D", "Trend MA Timeframe")
 show_trend_ma = input.bool(true, "Show Trend MA")

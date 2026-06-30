@@ -5,13 +5,13 @@ It is designed to help traders track institutional-style reaction zones, monitor
 ## Features
 
 - Bullish and bearish Order Block detection
-- Optional Breaker Block display, disabled by default
+- Optional Breaker Block display, enabled by default
 - Configurable calculation timeframe, defaulting to the chart timeframe
 - Swing-based structure break detection
 - Configurable order block candle lookback
 - Separate maximum limits for Order Blocks and Breaker Blocks
 - Active, mitigated, and breaker block styling
-- Optional labels, hidden by default
+- Optional labels, enabled by default
 - Optional mitigation / breaker labels
 - Equilibrium line, enabled by default
 - TradingView alert conditions
@@ -22,10 +22,10 @@ It is designed to help traders track institutional-style reaction zones, monitor
 - Swing Length: pivot length used to define structure breaks
 - Order Block Lookback: number of candles searched backward to find the order block candle
 - Show Order Blocks: toggles classic bullish and bearish order block zones, enabled by default
-- Show Breaker Blocks: toggles breaker conversion and breaker styling, disabled by default
+- Show Breaker Blocks: toggles breaker conversion and breaker styling, enabled by default
 - Maximum Order Blocks: maximum order block zones kept per bullish/bearish side, default 50 and up to 200
 - Maximum Breaker Blocks: maximum breaker zones kept per bullish/bearish side, default 50 and up to 200
-- Show Labels: toggles OB/breaker labels, hidden by default
+- Show Labels: toggles OB/breaker labels, enabled by default
 - Show Equilibrium: toggles the equilibrium line for each visible block, enabled by default
 - Keep Mitigated Blocks: keeps mitigated blocks visible up to the mitigation bar in a faded style, disabled by default
 - Show Mitigation Labels: toggles mitigation and breaker labels

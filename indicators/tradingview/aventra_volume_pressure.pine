@@ -1,5 +1,5 @@
 //@version=6
-// Aventra Version: 1.0.0
+// Aventra Version: 1.0.4
 indicator("Volume Pressure [Aventra]", shorttitle="Volume Pressure [Aventra]", overlay=false)
 
 calculation_timeframe = input.timeframe("", "Calculation Timeframe")
@@ -11,9 +11,9 @@ show_pressure_line = input.bool(true, "Show Smoothed Pressure Line")
 show_relative_volume = input.bool(false, "Show Relative Volume")
 show_spike_markers = input.bool(true, "Show Volume Spike Markers")
 show_signal_labels = input.bool(false, "Show Pressure Signal Labels")
-bullish_color = input.color(color.lime, "Bullish Pressure Color")
-bearish_color = input.color(color.red, "Bearish Pressure Color")
-neutral_color = input.color(color.gray, "Neutral Pressure Color")
+bullish_color = input.color(color.new(color.lime, 50), "Bullish Pressure Color")
+bearish_color = input.color(color.new(color.red, 50), "Bearish Pressure Color")
+neutral_color = input.color(color.new(color.gray, 50), "Neutral Pressure Color")
 
 use_chart_timeframe = calculation_timeframe == ""
 request_timeframe = use_chart_timeframe ? timeframe.period : calculation_timeframe
@@ -48,20 +48,20 @@ bullish_pressure_signal = ta.crossover(smoothed_pressure, pressure_threshold)
 bearish_pressure_signal = ta.crossunder(smoothed_pressure, -pressure_threshold)
 
 pressure_color = smoothed_pressure > 0 ? bullish_color : smoothed_pressure < 0 ? bearish_color : neutral_color
-histogram_color = volume_spike ? color.new(pressure_color, 0) : color.new(pressure_color, 35)
+histogram_color = color.new(pressure_color, 50)
 
-hline(0, "Zero Line", color=color.new(neutral_color, 40))
-hline(pressure_threshold, "Bullish Threshold", color=color.new(bullish_color, 65), linestyle=hline.style_dotted)
-hline(-pressure_threshold, "Bearish Threshold", color=color.new(bearish_color, 65), linestyle=hline.style_dotted)
+hline(0, "Zero Line", color=color.new(neutral_color, 50))
+hline(pressure_threshold, "Bullish Threshold", color=color.new(bullish_color, 50), linestyle=hline.style_dotted)
+hline(-pressure_threshold, "Bearish Threshold", color=color.new(bearish_color, 50), linestyle=hline.style_dotted)
 
 plot(weighted_pressure, "Volume Pressure Histogram", style=plot.style_columns, color=histogram_color)
-plot(show_pressure_line ? smoothed_pressure : na, "Smoothed Pressure", color=color.white, linewidth=2)
-plot(show_relative_volume ? relative_volume * 10.0 : na, "Relative Volume x10", color=color.new(color.blue, 0), linewidth=1)
+plot(show_pressure_line ? smoothed_pressure : na, "Smoothed Pressure", color=color.new(color.white, 50), linewidth=2)
+plot(show_relative_volume ? relative_volume * 10.0 : na, "Relative Volume x10", color=color.new(color.blue, 50), linewidth=1)
 
-plotshape(show_spike_markers and bullish_spike, title="Bullish Volume Spike", text="", style=shape.triangleup, location=location.bottom, color=bullish_color, textcolor=color.black, size=size.tiny)
-plotshape(show_spike_markers and bearish_spike, title="Bearish Volume Spike", text="", style=shape.triangledown, location=location.top, color=bearish_color, textcolor=color.white, size=size.tiny)
-plotshape(show_signal_labels and bullish_pressure_signal, title="Bullish Pressure Signal", text="BULL", style=shape.labelup, location=location.bottom, color=bullish_color, textcolor=color.black, size=size.small)
-plotshape(show_signal_labels and bearish_pressure_signal, title="Bearish Pressure Signal", text="BEAR", style=shape.labeldown, location=location.top, color=bearish_color, textcolor=color.white, size=size.small)
+plotshape(show_spike_markers and bullish_spike, title="Bullish Volume Spike", text="", style=shape.triangleup, location=location.bottom, color=color.new(bullish_color, 50), textcolor=color.black, size=size.tiny)
+plotshape(show_spike_markers and bearish_spike, title="Bearish Volume Spike", text="", style=shape.triangledown, location=location.top, color=color.new(bearish_color, 50), textcolor=color.white, size=size.tiny)
+plotshape(show_signal_labels and bullish_pressure_signal, title="Bullish Pressure Signal", text="Bull", style=shape.labelup, location=location.bottom, color=color.new(bullish_color, 50), textcolor=color.white, size=size.tiny)
+plotshape(show_signal_labels and bearish_pressure_signal, title="Bearish Pressure Signal", text="Bear", style=shape.labeldown, location=location.top, color=color.new(bearish_color, 50), textcolor=color.white, size=size.tiny)
 
 alertcondition(bullish_pressure_signal, title="Volume Pressure [Aventra] Bullish Pressure", message="Volume Pressure [Aventra]: Bullish volume pressure crossed above the threshold.")
 alertcondition(bearish_pressure_signal, title="Volume Pressure [Aventra] Bearish Pressure", message="Volume Pressure [Aventra]: Bearish volume pressure crossed below the threshold.")
