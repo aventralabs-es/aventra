@@ -1150,3 +1150,28 @@ h3 {
     grid-template-columns: 1fr;
   }
 }
+
+.single-candle line,
+.mini-candles line {
+  stroke: rgba(24, 32, 42, .55);
+  stroke-width: 3;
+}
+
+.single-candle rect,
+.mini-candles rect {
+  stroke-width: 0;
+}
+
+.single-candle .bull,
+.mini-candles .bull {
+  fill: rgba(31, 138, 122, .76);
+}
+
+.single-candle .bear,
+.mini-candles .bear {
+  fill: rgba(217, 106, 75, .76);
+}
+
+.candle-pair .pattern-card svg {
+  max-height: 190px;
+}

@@ -21,35 +21,178 @@
       <section class="article-section">
   <p class="eyebrow">Classical Technical Analysis</p>
   <h1>Candlestick Basics</h1>
-  <p class="article-lead">Candlesticks compress price movement into open, high, low, and close. They help traders observe pressure, rejection, continuation, and uncertainty.</p>
+  <p class="article-lead">Candlesticks compress price movement into open, high, low, and close. A bar pattern is useful only when it appears at a meaningful location such as support, resistance, trendline, breakout retest, or a prior liquidity area.</p>
+
   <div class="article-visual candle-visual">
-  <div class="visual-heading">
-    <strong>Example: Candle pressure and rejection</strong>
-    <span>Candles show how price moved inside one period. Wicks, bodies, and closes matter most around important zones.</span>
+    <div class="visual-heading">
+      <strong>Example: Candle pressure and rejection</strong>
+      <span>Candles show how price moved inside one period. Wicks, bodies, and closes matter most around important zones.</span>
+    </div>
+    <svg viewBox="0 0 760 320" role="img" aria-label="Candlestick example chart">
+      <path class="example-grid" d="M40 70H720M40 150H720M40 230H720"></path>
+      <rect class="resistance-zone" x="78" y="70" width="608" height="38"></rect>
+      <g class="candles">
+        <line x1="110" y1="190" x2="110" y2="248"></line><rect class="bull" x="99" y="204" width="22" height="32"></rect>
+        <line x1="158" y1="154" x2="158" y2="228"></line><rect class="bull" x="147" y="172" width="22" height="38"></rect>
+        <line x1="206" y1="112" x2="206" y2="206"></line><rect class="bull" x="195" y="132" width="22" height="54"></rect>
+        <line x1="254" y1="78" x2="254" y2="194"></line><rect class="bear" x="243" y="108" width="22" height="48"></rect>
+        <line x1="302" y1="86" x2="302" y2="182"></line><rect class="bear" x="291" y="118" width="22" height="36"></rect>
+        <line x1="350" y1="126" x2="350" y2="214"></line><rect class="bear" x="339" y="150" width="22" height="42"></rect>
+      </g>
+      <text x="92" y="62">Rejection near resistance</text>
+    </svg>
+    <p>The long upper wick near resistance shows rejection. That does not automatically mean a reversal, but it tells the trader that the reaction around the zone deserves attention.</p>
   </div>
-  <svg viewBox="0 0 760 320" role="img" aria-label="Candlestick example chart">
-  <path class="example-grid" d="M40 70H720M40 150H720M40 230H720"></path>
-  <rect class="resistance-zone" x="78" y="70" width="608" height="38"></rect>
-  <g class="candles">
-    <line x1="110" y1="190" x2="110" y2="248"></line><rect class="bull" x="99" y="204" width="22" height="32"></rect>
-    <line x1="158" y1="154" x2="158" y2="228"></line><rect class="bull" x="147" y="172" width="22" height="38"></rect>
-    <line x1="206" y1="112" x2="206" y2="206"></line><rect class="bull" x="195" y="132" width="22" height="54"></rect>
-    <line x1="254" y1="78" x2="254" y2="194"></line><rect class="bear" x="243" y="108" width="22" height="48"></rect>
-    <line x1="302" y1="86" x2="302" y2="182"></line><rect class="bear" x="291" y="118" width="22" height="36"></rect>
-    <line x1="350" y1="126" x2="350" y2="214"></line><rect class="bear" x="339" y="150" width="22" height="42"></rect>
-  </g>
-  <text x="92" y="62">Rejection near resistance</text>
-</svg>
-  <p>The long upper wick near resistance shows rejection. That does not automatically mean a reversal, but it tells the trader that the reaction around the zone deserves attention.</p>
-</div>
-  <h2>What It Is</h2>
-  <p>Each candle shows the range and closing behavior for one period. A large body often suggests directional pressure, while long wicks can show rejection or volatility around a price area.</p>
-  <h2>How Traders Use It</h2>
-  <p>Traders read candles around key zones, trendlines, support, resistance, and structure levels. A candle pattern is more meaningful when it appears at a relevant location rather than in the middle of noise.</p>
+
+  <h2>How To Read Candlestick Patterns</h2>
+  <p>A candle pattern should be read through location, body size, wick behavior, close position, and follow-through. The same candle can mean different things depending on whether it appears in a trend, at support, at resistance, or in the middle of a range.</p>
+  <div class="pattern-rules">
+    <span>Location matters more than the pattern name.</span>
+    <span>Large bodies show pressure; long wicks show rejection or volatility.</span>
+    <span>Closes near highs or lows reveal who controlled the bar.</span>
+    <span>Follow-through confirms whether the signal had real participation.</span>
+  </div>
+
+  <h2>Single-Bar Patterns</h2>
+  <div class="pattern-pair candle-pair">
+    <article class="pattern-card bullish-card">
+      <span>Bullish Rejection</span>
+      <h3>Hammer / Pin Bar</h3>
+      <svg viewBox="0 0 260 180" aria-label="Bullish hammer candle">
+        <path class="mini-grid" d="M20 55H240M20 115H240"></path>
+        <g class="single-candle"><line x1="130" y1="34" x2="130" y2="152"></line><rect class="bull" x="111" y="52" width="38" height="34"></rect></g>
+      </svg>
+      <p>A small body near the top of the range with a long lower wick can show downside rejection. It is most useful near support or after a selloff.</p>
+    </article>
+    <article class="pattern-card bearish-card">
+      <span>Bearish Rejection</span>
+      <h3>Shooting Star / Pin Bar</h3>
+      <svg viewBox="0 0 260 180" aria-label="Bearish shooting star candle">
+        <path class="mini-grid" d="M20 55H240M20 115H240"></path>
+        <g class="single-candle"><line x1="130" y1="28" x2="130" y2="146"></line><rect class="bear" x="111" y="94" width="38" height="34"></rect></g>
+      </svg>
+      <p>A small body near the bottom of the range with a long upper wick can show upside rejection. It matters most near resistance or after an extended advance.</p>
+    </article>
+  </div>
+
+  <div class="pattern-pair candle-pair">
+    <article class="pattern-card bullish-card">
+      <span>Indecision</span>
+      <h3>Doji At Support</h3>
+      <svg viewBox="0 0 260 180" aria-label="Doji candle at support">
+        <path class="mini-grid" d="M20 55H240M20 115H240"></path>
+        <rect class="support-zone" x="52" y="126" width="156" height="22"></rect>
+        <g class="single-candle"><line x1="130" y1="54" x2="130" y2="144"></line><rect class="bull" x="105" y="96" width="50" height="5"></rect></g>
+      </svg>
+      <p>A doji shows indecision. At support, it can warn that selling pressure is slowing, but it still needs confirmation from the next candles.</p>
+    </article>
+    <article class="pattern-card bearish-card">
+      <span>Indecision</span>
+      <h3>Doji At Resistance</h3>
+      <svg viewBox="0 0 260 180" aria-label="Doji candle at resistance">
+        <path class="mini-grid" d="M20 55H240M20 115H240"></path>
+        <rect class="resistance-zone" x="52" y="32" width="156" height="22"></rect>
+        <g class="single-candle"><line x1="130" y1="36" x2="130" y2="126"></line><rect class="bear" x="105" y="82" width="50" height="5"></rect></g>
+      </svg>
+      <p>At resistance, a doji can show that buyers are no longer closing with control. It becomes more meaningful if followed by bearish pressure.</p>
+    </article>
+  </div>
+
+  <h2>Two-Bar Patterns</h2>
+  <div class="pattern-pair candle-pair">
+    <article class="pattern-card bullish-card">
+      <span>Bullish Reversal</span>
+      <h3>Bullish Engulfing</h3>
+      <svg viewBox="0 0 260 180" aria-label="Bullish engulfing candle pattern">
+        <path class="mini-grid" d="M20 55H240M20 115H240"></path>
+        <g class="mini-candles"><line x1="104" y1="56" x2="104" y2="132"></line><rect class="bear" x="89" y="76" width="30" height="38"></rect><line x1="154" y1="42" x2="154" y2="144"></line><rect class="bull" x="139" y="54" width="30" height="78"></rect></g>
+      </svg>
+      <p>A bullish candle fully overwhelms the prior bearish body. It suggests buyers stepped in strongly, especially if it forms at support or after a liquidity sweep.</p>
+    </article>
+    <article class="pattern-card bearish-card">
+      <span>Bearish Reversal</span>
+      <h3>Bearish Engulfing</h3>
+      <svg viewBox="0 0 260 180" aria-label="Bearish engulfing candle pattern">
+        <path class="mini-grid" d="M20 55H240M20 115H240"></path>
+        <g class="mini-candles"><line x1="104" y1="48" x2="104" y2="128"></line><rect class="bull" x="89" y="68" width="30" height="38"></rect><line x1="154" y1="36" x2="154" y2="146"></line><rect class="bear" x="139" y="58" width="30" height="78"></rect></g>
+      </svg>
+      <p>A bearish candle overwhelms the prior bullish body. It suggests sellers regained control, especially near resistance or after a failed breakout.</p>
+    </article>
+  </div>
+
+  <div class="pattern-pair candle-pair">
+    <article class="pattern-card bullish-card">
+      <span>Breakout Compression</span>
+      <h3>Inside Bar Breakout</h3>
+      <svg viewBox="0 0 260 180" aria-label="Inside bar bullish breakout">
+        <path class="mini-grid" d="M20 55H240M20 115H240"></path>
+        <g class="mini-candles"><line x1="88" y1="42" x2="88" y2="146"></line><rect class="bull" x="73" y="62" width="30" height="66"></rect><line x1="132" y1="72" x2="132" y2="120"></line><rect class="bear" x="117" y="84" width="30" height="22"></rect><line x1="176" y1="40" x2="176" y2="116"></line><rect class="bull" x="161" y="50" width="30" height="54"></rect></g>
+      </svg>
+      <p>An inside bar shows compression inside the prior candle range. A bullish break above the mother bar can signal expansion if broader context supports it.</p>
+    </article>
+    <article class="pattern-card bearish-card">
+      <span>Breakdown Compression</span>
+      <h3>Inside Bar Breakdown</h3>
+      <svg viewBox="0 0 260 180" aria-label="Inside bar bearish breakdown">
+        <path class="mini-grid" d="M20 55H240M20 115H240"></path>
+        <g class="mini-candles"><line x1="88" y1="34" x2="88" y2="138"></line><rect class="bear" x="73" y="54" width="30" height="66"></rect><line x1="132" y1="62" x2="132" y2="112"></line><rect class="bull" x="117" y="78" width="30" height="24"></rect><line x1="176" y1="74" x2="176" y2="150"></line><rect class="bear" x="161" y="84" width="30" height="54"></rect></g>
+      </svg>
+      <p>A bearish break below the mother bar suggests expansion lower. It is more useful when aligned with trend, resistance rejection, or weak market context.</p>
+    </article>
+  </div>
+
+  <h2>Three-Bar Patterns</h2>
+  <div class="pattern-pair candle-pair">
+    <article class="pattern-card bullish-card">
+      <span>Bullish Reversal</span>
+      <h3>Morning Star</h3>
+      <svg viewBox="0 0 260 180" aria-label="Morning star pattern">
+        <path class="mini-grid" d="M20 55H240M20 115H240"></path>
+        <g class="mini-candles"><line x1="76" y1="48" x2="76" y2="128"></line><rect class="bear" x="61" y="60" width="30" height="58"></rect><line x1="130" y1="100" x2="130" y2="150"></line><rect class="bull" x="115" y="122" width="30" height="10"></rect><line x1="184" y1="58" x2="184" y2="142"></line><rect class="bull" x="169" y="72" width="30" height="54"></rect></g>
+      </svg>
+      <p>A bearish candle, small indecision candle, then strong bullish candle can show a shift from selling pressure to buyer control.</p>
+    </article>
+    <article class="pattern-card bearish-card">
+      <span>Bearish Reversal</span>
+      <h3>Evening Star</h3>
+      <svg viewBox="0 0 260 180" aria-label="Evening star pattern">
+        <path class="mini-grid" d="M20 55H240M20 115H240"></path>
+        <g class="mini-candles"><line x1="76" y1="52" x2="76" y2="132"></line><rect class="bull" x="61" y="62" width="30" height="58"></rect><line x1="130" y1="30" x2="130" y2="82"></line><rect class="bear" x="115" y="50" width="30" height="10"></rect><line x1="184" y1="42" x2="184" y2="134"></line><rect class="bear" x="169" y="58" width="30" height="58"></rect></g>
+      </svg>
+      <p>A bullish candle, small indecision candle, then strong bearish candle can show a shift from buyer pressure to seller control.</p>
+    </article>
+  </div>
+
+  <div class="pattern-pair candle-pair">
+    <article class="pattern-card bullish-card">
+      <span>Bullish Continuation</span>
+      <h3>Three White Soldiers</h3>
+      <svg viewBox="0 0 260 180" aria-label="Three white soldiers candle pattern">
+        <path class="mini-grid" d="M20 55H240M20 115H240"></path>
+        <g class="mini-candles"><line x1="76" y1="94" x2="76" y2="150"></line><rect class="bull" x="61" y="104" width="30" height="34"></rect><line x1="130" y1="70" x2="130" y2="132"></line><rect class="bull" x="115" y="82" width="30" height="38"></rect><line x1="184" y1="44" x2="184" y2="108"></line><rect class="bull" x="169" y="58" width="30" height="38"></rect></g>
+      </svg>
+      <p>Three strong bullish closes can show sustained buying pressure. It is strongest after a base or early trend shift, not after an already extended move.</p>
+    </article>
+    <article class="pattern-card bearish-card">
+      <span>Bearish Continuation</span>
+      <h3>Three Black Crows</h3>
+      <svg viewBox="0 0 260 180" aria-label="Three black crows candle pattern">
+        <path class="mini-grid" d="M20 55H240M20 115H240"></path>
+        <g class="mini-candles"><line x1="76" y1="34" x2="76" y2="92"></line><rect class="bear" x="61" y="46" width="30" height="36"></rect><line x1="130" y1="58" x2="130" y2="118"></line><rect class="bear" x="115" y="70" width="30" height="38"></rect><line x1="184" y1="88" x2="184" y2="150"></line><rect class="bear" x="169" y="100" width="30" height="38"></rect></g>
+      </svg>
+      <p>Three strong bearish closes can show sustained selling pressure. It is most useful near a failed rally, distribution zone, or trend shift.</p>
+    </article>
+  </div>
+
+  <h2>How Traders Evaluate Candle Patterns</h2>
+  <p>The pattern is only one layer. Traders usually check whether it forms at a meaningful level, whether volume confirms the reaction, whether the next candles follow through, and whether the higher-timeframe context agrees.</p>
+
   <h2>Common Mistakes</h2>
-  <p>A common mistake is memorizing candle names without context. A hammer, engulfing candle, or doji has limited value unless the trader understands where it forms and what market condition surrounds it.</p>
+  <p>A common mistake is memorizing candle names without context. A hammer, engulfing candle, or doji has limited value unless the trader understands where it forms and what market condition surrounds it. Another mistake is entering before the candle closes, which can turn a clean-looking signal into noise.</p>
+
   <h2>Aventra Context</h2>
-  <p>Candlestick reading supports liquidity sweeps, breakout retests, FVG reactions, and volume pressure analysis. It is a small part of a broader decision framework.</p>
+  <p>Candlestick reading supports Liquidity Sweeps, Breakout Retest Signals, FVG reactions, Volume Pressure, and Market Radar workflows. It is a small but important part of a broader analysis framework.</p>
+
   <p class="article-note">Educational content only. This is market analysis context, not financial advice.</p>
 </section>
     </main>
@@ -59,4 +202,5 @@
     </footer>
   </body>
 </html>
+
 
