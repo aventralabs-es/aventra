@@ -18,43 +18,30 @@
           <a href="#support">Support</a>
         </nav>
       </div>
-      <div class="market-mini-strip" aria-label="Reference market mini charts">
-        <a class="market-mini-card is-up" data-quote-symbol="^GSPC" href="https://www.tradingview.com/symbols/SP-SPX/" target="_blank" rel="noopener" aria-label="Open S&P 500 chart on TradingView">
-          <span><strong>S&P 500</strong><em>SPX</em><b data-price>--</b><small data-change>--</small></span>
-          <svg viewBox="0 0 96 34" aria-hidden="true"><path d="M3 24 C16 15 22 18 34 12 C46 6 54 14 64 10 C77 5 84 9 93 4"></path></svg>
-        </a>
-        <a class="market-mini-card is-up" data-quote-symbol="^NDX" href="https://www.tradingview.com/symbols/NASDAQ-NDX/" target="_blank" rel="noopener" aria-label="Open Nasdaq 100 chart on TradingView">
-          <span><strong>Nasdaq 100</strong><em>NDX</em><b data-price>--</b><small data-change>--</small></span>
-          <svg viewBox="0 0 96 34" aria-hidden="true"><path d="M3 28 C14 24 20 26 31 18 C43 9 50 14 61 8 C75 2 84 8 93 5"></path></svg>
-        </a>
-        <a class="market-mini-card is-up" data-quote-symbol="^DJI" href="https://www.tradingview.com/symbols/TVC-DJI/" target="_blank" rel="noopener" aria-label="Open Dow Jones chart on TradingView">
-          <span><strong>Dow Jones</strong><em>DJI</em><b data-price>--</b><small data-change>--</small></span>
-          <svg viewBox="0 0 96 34" aria-hidden="true"><path d="M3 21 C15 17 23 20 34 15 C47 9 57 15 68 11 C79 7 86 10 93 6"></path></svg>
-        </a>
-        <a class="market-mini-card is-down" data-quote-symbol="CL=F" href="https://www.tradingview.com/symbols/TVC-USOIL/" target="_blank" rel="noopener" aria-label="Open Oil chart on TradingView">
-          <span><strong>Oil</strong><em>USOIL</em><b data-price>--</b><small data-change>--</small></span>
-          <svg viewBox="0 0 96 34" aria-hidden="true"><path d="M3 8 C15 14 23 10 34 16 C47 24 55 19 66 25 C78 31 86 25 93 29"></path></svg>
-        </a>
-        <a class="market-mini-card is-up" data-quote-symbol="DX-Y.NYB" href="https://www.tradingview.com/symbols/TVC-DXY/" target="_blank" rel="noopener" aria-label="Open DXY chart on TradingView">
-          <span><strong>DXY</strong><em>Dollar</em><b data-price>--</b><small data-change>--</small></span>
-          <svg viewBox="0 0 96 34" aria-hidden="true"><path d="M3 25 C16 20 23 23 34 16 C46 10 55 13 66 9 C78 5 85 7 93 4"></path></svg>
-        </a>
-        <a class="market-mini-card is-down" data-quote-symbol="^VIX" href="https://www.tradingview.com/symbols/CBOE-VIX/" target="_blank" rel="noopener" aria-label="Open VIX chart on TradingView">
-          <span><strong>VIX</strong><em>Volatility</em><b data-price>--</b><small data-change>--</small></span>
-          <svg viewBox="0 0 96 34" aria-hidden="true"><path d="M3 7 C14 18 21 12 32 22 C44 31 54 18 65 24 C77 29 84 18 93 26"></path></svg>
-        </a>
-        <a class="market-mini-card is-up" data-quote-symbol="GC=F" href="https://www.tradingview.com/symbols/OANDA-XAUUSD/" target="_blank" rel="noopener" aria-label="Open Gold chart on TradingView">
-          <span><strong>Gold</strong><em>XAUUSD</em><b data-price>--</b><small data-change>--</small></span>
-          <svg viewBox="0 0 96 34" aria-hidden="true"><path d="M3 23 C14 19 23 21 34 14 C46 8 55 12 66 7 C78 3 86 8 93 5"></path></svg>
-        </a>
-        <a class="market-mini-card is-up" data-quote-symbol="SI=F" href="https://www.tradingview.com/symbols/OANDA-XAGUSD/" target="_blank" rel="noopener" aria-label="Open Silver chart on TradingView">
-          <span><strong>Silver</strong><em>XAGUSD</em><b data-price>--</b><small data-change>--</small></span>
-          <svg viewBox="0 0 96 34" aria-hidden="true"><path d="M3 26 C15 20 24 24 35 17 C47 10 55 17 66 11 C78 5 85 12 93 7"></path></svg>
-        </a>
-        <a class="market-mini-card is-up" data-quote-symbol="XU100.IS" href="https://www.tradingview.com/symbols/BIST-XU100/" target="_blank" rel="noopener" aria-label="Open BIST 100 chart on TradingView">
-          <span><strong>BIST 100</strong><em>XU100</em><b data-price>--</b><small data-change>--</small></span>
-          <svg viewBox="0 0 96 34" aria-hidden="true"><path d="M3 27 C15 22 22 25 34 19 C47 12 55 17 66 10 C78 4 85 9 93 5"></path></svg>
-        </a>
+      <div class="market-ticker-panel header-ticker" aria-label="Live market prices from TradingView">
+        <div class="tradingview-widget-container">
+          <div class="tradingview-widget-container__widget"></div>
+          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+{
+  "symbols": [
+    { "proName": "SP:SPX", "title": "S&P 500" },
+    { "proName": "NASDAQ:NDX", "title": "Nasdaq 100" },
+    { "proName": "TVC:DJI", "title": "Dow Jones" },
+    { "proName": "TVC:USOIL", "title": "Oil" },
+    { "proName": "TVC:DXY", "title": "DXY" },
+    { "proName": "CBOE:VIX", "title": "VIX" },
+    { "proName": "OANDA:XAUUSD", "title": "Gold" },
+    { "proName": "OANDA:XAGUSD", "title": "Silver" },
+    { "proName": "BIST:XU100", "title": "BIST 100" }
+  ],
+  "showSymbolLogo": true,
+  "isTransparent": true,
+  "displayMode": "adaptive",
+  "colorTheme": "light",
+  "locale": "en"
+}
+          </script>
+        </div>
       </div>
     </header>
 
@@ -421,6 +408,9 @@
     <script src="app.js"></script>
   </body>
 </html>
+
+
+
 
 
 
