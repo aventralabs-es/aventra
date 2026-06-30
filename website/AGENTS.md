@@ -6,11 +6,13 @@ The website is the central Aventra brand hub. It should support public indicator
 
 ## Preferred Stack
 
-- Next.js + TypeScript when accounts, payments, dashboards, or admin flows are needed.
+- The website is now a Next.js + TypeScript app in `website/`.
 - Tailwind CSS and shadcn/ui for a clean product interface.
 - Supabase for auth and database when building account features.
 - Stripe for payment flows unless the user chooses another provider.
 - Vercel for deployment unless the user chooses another host.
+
+Before changing Market Radar, auth, analytics, SEO, or product architecture, read `../docs/market-radar-architecture.md`.
 
 ## UX Direction
 

@@ -36,3 +36,21 @@
   - Watchlist candidate
   - Invalidation level
   - Educational scenario
+
+
+## Website And Product App Stack
+
+- The website has moved from static HTML/CSS/JS to Next.js + TypeScript in `website/`.
+- Vercel remains the hosting and deployment platform.
+- Vercel Web Analytics is the default analytics choice for the MVP.
+- Supabase is planned for auth, user data, watchlists, saved scans, and account features.
+- Stripe is planned for payment flows when premium access begins.
+- Keep legacy blog HTML available until migrated to native Next.js routes.
+
+## Market Radar Model
+
+- Market Radar classifies candidates by direction, behavior, pattern family, pattern variant, market context, quality score, and explanation.
+- Direction is bullish or bearish.
+- Behavior is continuation or reversal.
+- Pattern variant alone must not decide interpretation; pattern plus market context decides the final reading.
+- See `docs/market-radar-architecture.md` for the source-of-truth model.

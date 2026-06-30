@@ -1,4 +1,4 @@
-﻿# Aventra Roadmap
+# Aventra Roadmap
 
 ## Completed Milestones
 
@@ -7,6 +7,8 @@
 - Added social media links to the website.
 - Updated social media profiles with Aventra bio, website link, and logo.
 - Submitted the website to Google Search.
+- Migrated the website codebase to Next.js + TypeScript.
+- Added the initial Market Radar architecture route and documented the scanner data model.
 
 ## Phase 1: TradingView Public Portfolio
 
@@ -37,6 +39,8 @@
 - Use the website as the central documentation and support hub.
 
 ## Phase 5: Market Radar
+
+Source of truth: `docs/market-radar-architecture.md`.
 
 - Build Aventra Market Radar as a setup/pattern search product rather than a direct trade recommendation service.
 - Focus on detected technical conditions, watchlist candidates, and educational scenarios.
