@@ -39,7 +39,7 @@ a {
   z-index: 20;
   display: grid;
   gap: 10px;
-  min-height: 78px;
+  min-height: 92px;
   padding: 12px clamp(18px, 4vw, 52px);
   background: #ffffff;
   border-bottom: 1px solid var(--line);
@@ -59,6 +59,25 @@ a {
   color: var(--ink);
   font-weight: 850;
   letter-spacing: 0;
+}
+
+.logo-link {
+  line-height: 0;
+}
+
+.brand-logo,
+.footer-logo {
+  display: block;
+  width: auto;
+  object-fit: contain;
+}
+
+.brand-logo {
+  height: 33px;
+}
+
+.footer-logo {
+  height: 29px;
 }
 
 .wordmark {
@@ -123,6 +142,16 @@ h1 {
   letter-spacing: 0;
 }
 
+.hero-logo-title {
+  line-height: 0;
+}
+
+.hero-logo {
+  display: block;
+  width: min(430px, 82vw);
+  height: auto;
+}
+
 h2 {
   margin-bottom: 14px;
   font-size: 3.1rem;
@@ -153,7 +182,7 @@ h3 {
 
 .button,
 .filter-button {
-  min-height: 42px;
+  min-height: 33px;
   border: 1px solid var(--line);
   border-radius: 8px;
   cursor: pointer;
@@ -1222,7 +1251,7 @@ h3 {
 }
 .market-quote-strip {
   width: 100%;
-  min-height: 38px;
+  min-height: 29px;
   overflow: hidden;
   background: var(--surface);
 }
@@ -1242,6 +1271,16 @@ h3 {
 .market-quote-strip script {
   display: none;
 }
+
+
+
+
+
+
+
+
+
+
 
 
 
