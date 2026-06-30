@@ -51,7 +51,6 @@ export function SiteHeader() {
           <a href="/#indicators">Indicators</a>
           <a href="/#education">Education</a>
           <a href="/market-radar">Market Radar</a>
-          <a href="/#support">Support</a>
         </nav>
       </div>
       <div className="market-quote-strip" aria-label="Live market quotes from TradingView">
@@ -60,3 +59,4 @@ export function SiteHeader() {
     </header>
   );
 }
+

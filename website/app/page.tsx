@@ -1,4 +1,4 @@
-import { IndicatorCatalog } from "./components/IndicatorCatalog";
+﻿import { IndicatorCatalog } from "./components/IndicatorCatalog";
 import { SiteFooter } from "./components/SiteFooter";
 import { SiteHeader } from "./components/SiteHeader";
 
@@ -217,36 +217,11 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="section support-section" id="support" aria-labelledby="support-title">
-          <div>
-            <p className="eyebrow">Support</p>
-            <h2 id="support-title">Clear product help</h2>
-            <p>Support content should cover installation, indicator settings, platform availability, billing, and access status.</p>
-          </div>
-          <div className="support-links" aria-label="Support links">
-            <a href="mailto:aventralabs@gmail.com">aventralabs@gmail.com</a>
-            <a href="#terms">Terms</a>
-            <a href="#privacy">Privacy</a>
-            <a href="#risk">Risk Disclaimer</a>
-          </div>
-        </section>
 
-        <section className="legal-band" aria-label="Legal summaries">
-          <article id="terms">
-            <h2>Terms</h2>
-            <p>Use Aventra tools for technical analysis and education. Final trading decisions remain the user&apos;s responsibility.</p>
-          </article>
-          <article id="privacy">
-            <h2>Privacy</h2>
-            <p>Future account and payment flows should publish clear data handling terms.</p>
-          </article>
-          <article id="risk">
-            <h2>Risk Disclaimer</h2>
-            <p>Trading involves risk. Aventra tools do not guarantee outcomes and are not financial advice.</p>
-          </article>
-        </section>
       </main>
       <SiteFooter />
     </>
   );
 }
+
+

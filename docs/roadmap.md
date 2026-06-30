@@ -1,4 +1,4 @@
-# Aventra Roadmap
+﻿# Aventra Roadmap
 
 ## Completed Milestones
 
@@ -44,6 +44,12 @@ Source of truth: `docs/market-radar-architecture.md`.
 
 - Build Aventra Market Radar as a setup/pattern search product rather than a direct trade recommendation service.
 - Focus on detected technical conditions, watchlist candidates, and educational scenarios.
+- First implementation focus: trend-continuation pattern search before reversal patterns or broader setup scoring.
+- Initial MVP timeframes: 1D, 4H, and 15M.
+- Initial market type priority: stocks first; forex and crypto later.
+- Initial stock exchanges: NASDAQ, NYSE, and BIST.
+- Initial scan universes: NASDAQ 100 / NQ, S&P 500, and BIST 100.
+- Use provider-ingested OHLCV data stored in an Aventra-controlled database before running scanner logic.
 - Potential setup types:
   - Breakout Retest
   - MA Pullback
@@ -52,4 +58,10 @@ Source of truth: `docs/market-radar-architecture.md`.
   - Trend Continuation
   - Liquidity Sweep
   - Premium/Discount Context
+
+
+
+
+
+
 

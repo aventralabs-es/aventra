@@ -104,7 +104,6 @@ a {
 
 .hero-section,
 .section,
-.legal-band,
 .site-footer {
   width: min(1180px, calc(100% - 36px));
   margin: 0 auto;
@@ -482,41 +481,38 @@ h3 {
   flex-wrap: wrap;
 }
 
-.legal-band {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  padding: 40px 0 72px;
-}
-
-.legal-band article {
-  padding: 18px;
-  border-left: 4px solid var(--amber);
-  background: #fffaf0;
-}
-
-.legal-band h2 {
-  font-size: 1.1rem;
-}
-
-.legal-band p {
-  color: #6c5a35;
-}
 
 .site-footer {
+  display: grid;
+  gap: 12px;
+  padding: 24px 0 38px;
+  border-top: 1px solid var(--line);
+}
+
+.footer-main {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 14px 24px;
-  padding: 24px 0 38px;
-  border-top: 1px solid var(--line);
+}
+
+.footer-contact {
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
 }
 
 .footer-brand {
   color: var(--ink);
   font-size: 1.15rem;
   font-weight: 900;
+}
+
+.footer-email {
+  color: var(--muted);
+  font-size: .92rem;
+  font-weight: 700;
 }
 
 .footer-social {
@@ -540,6 +536,40 @@ h3 {
   margin: 0 9px;
   color: #aeb7c2;
   font-weight: 500;
+}
+
+.footer-legal-notes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  background: #ffffff;
+}
+
+.footer-legal-notes section {
+  min-width: 0;
+}
+
+.footer-legal-notes h2 {
+  margin-bottom: 5px;
+  color: var(--ink);
+  font-size: .78rem;
+  line-height: 1.15;
+  font-weight: 800;
+}
+
+.footer-legal-notes p {
+  margin-bottom: 0;
+  color: var(--muted);
+  font-size: .76rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 760px) {
+  .footer-legal-notes {
+    grid-template-columns: 1fr;
+  }
 }
 
 .social-icon {
@@ -578,10 +608,6 @@ h3 {
   }
 
   .catalog-grid,
-  .legal-band {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .intro-strip {
     grid-template-columns: 1fr;
   }
@@ -599,14 +625,12 @@ h3 {
 @media (max-width: 620px) {
   .hero-section,
   .section,
-  .legal-band,
   .site-footer {
     width: min(100% - 28px, 1180px);
   }
 
   .catalog-grid,
   .topic-grid,
-  .legal-band,
   .panel-metrics,
   .radar-table [role="row"] {
     grid-template-columns: 1fr;
@@ -1273,6 +1297,11 @@ h3 {
 .market-quote-strip script {
   display: none;
 }
+
+
+
+
+
 
 
 
