@@ -23,6 +23,7 @@ Aventra builds trading indicators, setup scanners, and platform tools for techni
 - Treat `Aventra Labs` only as a possible internal or company-context variant, not the main public logo.
 
 ## Avoid
+
 - Guaranteed profit language
 - Overpromising
 - Aggressive sales language
@@ -36,6 +37,32 @@ Aventra builds trading indicators, setup scanners, and platform tools for techni
 - `Market Sessions [Aventra]`
 - `Trend Strength Matrix [Aventra]`
 - `Breakout Retest Signals [Aventra]`
+
+## Official Digital Presence
+
+- Email: `AventraLabs@gmail.com`
+- Domain: `aventralab.com`
+- X: `AventraLabs`
+- Patreon: `AventraLabs`
+- TikTok: `AventraLab`
+- Pinterest: `AventraLabs`
+- YouTube: `AventraLabs`
+- Facebook: `AventraLabs`
+- Instagram: `AventraLab`
+- Reddit: `AventraLabs`
+- TradingView: `aventralabs` (`www.tradingview.com/u/aventralabs`)
+
+## Social Bio
+
+Primary shared bio:
+
+`Aventra builds clean, practical indicators for technical traders. Focused on readable signals, market structure, relative strength, and workflow-friendly tools.`
+
+Short bio for platforms with tight character limits such as Instagram:
+
+`Clean, practical indicators for technical traders. Readable signals, market structure, relative strength, and workflow-friendly tools.`
+
+Use the primary bio by default. Use the short bio when a platform character limit prevents the primary bio.
 
 ## Website Copy Direction
 

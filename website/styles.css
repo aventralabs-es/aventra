@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   --ink: #18202a;
   --muted: #5f6c7b;
   --line: #d8e0e7;
@@ -41,8 +41,8 @@ a {
   gap: 10px;
   min-height: 78px;
   padding: 12px clamp(18px, 4vw, 52px);
-  background: rgba(232, 236, 239, .96);
-  border-bottom: 1px solid rgba(198, 208, 216, .95);
+  background: #ffffff;
+  border-bottom: 1px solid var(--line);
   backdrop-filter: blur(18px);
 }
 
@@ -73,8 +73,9 @@ a {
 
 .main-nav a {
   padding: 8px 10px;
-  color: var(--muted);
+  color: var(--ink);
   font-size: .94rem;
+  font-weight: 700;
 }
 
 .main-nav a:hover,
@@ -476,16 +477,52 @@ h3 {
 .site-footer {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 14px 24px;
   padding: 24px 0 38px;
   border-top: 1px solid var(--line);
-  color: var(--muted);
 }
 
-.site-footer span:first-child {
+.footer-brand {
   color: var(--ink);
-  font-weight: 850;
+  font-size: 1.15rem;
+  font-weight: 900;
+}
+
+.footer-social {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0;
+}
+
+.footer-social a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+  font-size: .92rem;
+  font-weight: 750;
+}
+
+.footer-social a:not(:last-child)::after {
+  content: "|";
+  margin: 0 9px;
+  color: #aeb7c2;
+  font-weight: 500;
+}
+
+.social-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  fill: currentColor;
+}
+
+.site-footer a:hover,
+.site-footer a:focus-visible {
+  color: var(--teal);
 }
 
 @media (max-width: 900px) {
@@ -1187,8 +1224,6 @@ h3 {
   width: 100%;
   min-height: 38px;
   overflow: hidden;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
   background: var(--surface);
 }
 
@@ -1207,6 +1242,13 @@ h3 {
 .market-quote-strip script {
   display: none;
 }
+
+
+
+
+
+
+
 
 
 
