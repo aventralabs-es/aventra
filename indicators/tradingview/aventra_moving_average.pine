@@ -1,0 +1,48 @@
+//@version=6
+// Aventra Version: 1.0.0
+indicator("MA Crossover Signals [Aventra]", shorttitle="MA Crossover Signals [Aventra]", overlay=true)
+
+source = input.source(close, "Source")
+calculation_timeframe = input.timeframe("", "Calculation Timeframe")
+fast_length = input.int(20, "Fast Length", minval=1)
+slow_length = input.int(50, "Slow Length", minval=1)
+ma_type = input.string("EMA", "Moving Average Type", options=["SMA", "EMA", "WMA", "RMA", "VWMA"])
+
+show_signals = input.bool(true, "Show Crossover Signals")
+color_bars = input.bool(false, "Color Bars by Trend")
+
+calc_ma(float _source, int _length, string _type) =>
+    switch _type
+        "SMA" => ta.sma(_source, _length)
+        "EMA" => ta.ema(_source, _length)
+        "WMA" => ta.wma(_source, _length)
+        "RMA" => ta.rma(_source, _length)
+        "VWMA" => ta.vwma(_source, _length)
+        => ta.ema(_source, _length)
+
+fast_ma_chart = calc_ma(source, fast_length, ma_type)
+slow_ma_chart = calc_ma(source, slow_length, ma_type)
+use_chart_timeframe = calculation_timeframe == ""
+
+fast_ma = use_chart_timeframe ? fast_ma_chart : request.security(syminfo.tickerid, calculation_timeframe, calc_ma(source, fast_length, ma_type), barmerge.gaps_off, barmerge.lookahead_off)
+slow_ma = use_chart_timeframe ? slow_ma_chart : request.security(syminfo.tickerid, calculation_timeframe, calc_ma(source, slow_length, ma_type), barmerge.gaps_off, barmerge.lookahead_off)
+
+trend_up = fast_ma >= slow_ma
+buy_signal = ta.crossover(fast_ma, slow_ma)
+sell_signal = ta.crossunder(fast_ma, slow_ma)
+
+fast_color = trend_up ? color.lime : color.red
+slow_color = color.new(color.gray, 0)
+fill_color = trend_up ? color.new(color.lime, 85) : color.new(color.red, 85)
+
+fast_plot = plot(fast_ma, "Fast MA", color=fast_color, linewidth=2)
+slow_plot = plot(slow_ma, "Slow MA", color=slow_color, linewidth=2)
+fill(fast_plot, slow_plot, color=fill_color, title="Trend Fill")
+
+plotshape(show_signals and buy_signal, title="Buy Signal", text="BUY", style=shape.labelup, location=location.belowbar, color=color.lime, textcolor=color.black, size=size.small)
+plotshape(show_signals and sell_signal, title="Sell Signal", text="SELL", style=shape.labeldown, location=location.abovebar, color=color.red, textcolor=color.white, size=size.small)
+
+barcolor(color_bars ? (trend_up ? color.new(color.lime, 70) : color.new(color.red, 70)) : na)
+
+alertcondition(buy_signal, title="MA Crossover Signals [Aventra] Buy", message="MA Crossover Signals [Aventra]: Fast moving average crossed above the slow moving average.")
+alertcondition(sell_signal, title="MA Crossover Signals [Aventra] Sell", message="MA Crossover Signals [Aventra]: Fast moving average crossed below the slow moving average.")

@@ -1,0 +1,158 @@
+﻿//@version=6
+// Aventra Version: 1.4.0
+indicator("Premium Discount Zones [Aventra]", shorttitle="Premium Discount Zones [Aventra]", overlay=true, max_boxes_count=20, max_lines_count=20, max_labels_count=20)
+
+calculation_timeframe = input.timeframe("", "Calculation Timeframe")
+range_mode = input.string("Lookback High / Low", "Range Mode", options=["Lookback High / Low", "Latest Swings"])
+lookback_bars = input.int(100, "Lookback Bars", minval=10, maxval=1000)
+swing_length = input.int(5, "Swing Length", minval=2)
+show_premium_zone = input.bool(true, "Show Premium Zone")
+show_discount_zone = input.bool(true, "Show Discount Zone")
+show_equilibrium = input.bool(true, "Show Equilibrium")
+show_range_high_low = input.bool(true, "Show Range High / Low")
+show_labels = input.bool(false, "Show Labels")
+premium_color = input.color(color.new(color.red, 92), "Premium Zone Color")
+discount_color = input.color(color.new(color.lime, 92), "Discount Zone Color")
+equilibrium_color = input.color(color.new(color.rgb(255, 193, 7), 60), "Equilibrium Color")
+range_line_color = input.color(color.new(color.gray, 55), "Range High / Low Color")
+label_color = input.color(color.new(color.black, 60), "Label Color")
+
+use_chart_timeframe = calculation_timeframe == ""
+request_timeframe = use_chart_timeframe ? timeframe.period : calculation_timeframe
+
+calc_dealing_range() =>
+    float pivot_high = ta.pivothigh(high, swing_length, swing_length)
+    float pivot_low = ta.pivotlow(low, swing_length, swing_length)
+    float last_swing_high = ta.valuewhen(not na(pivot_high), pivot_high, 0)
+    float last_swing_low = ta.valuewhen(not na(pivot_low), pivot_low, 0)
+    int last_swing_high_time = ta.valuewhen(not na(pivot_high), time[swing_length], 0)
+    int last_swing_low_time = ta.valuewhen(not na(pivot_low), time[swing_length], 0)
+    int highest_offset = ta.highestbars(high, lookback_bars)
+    int lowest_offset = ta.lowestbars(low, lookback_bars)
+    int highest_bars_back = not na(highest_offset) ? math.abs(highest_offset) : na
+    int lowest_bars_back = not na(lowest_offset) ? math.abs(lowest_offset) : na
+    float lookback_high = ta.highest(high, lookback_bars)
+    float lookback_low = ta.lowest(low, lookback_bars)
+    int lookback_high_time = not na(highest_bars_back) ? time[highest_bars_back] : na
+    int lookback_low_time = not na(lowest_bars_back) ? time[lowest_bars_back] : na
+    bool use_lookback = range_mode == "Lookback High / Low"
+    float selected_high = use_lookback ? lookback_high : last_swing_high
+    float selected_low = use_lookback ? lookback_low : last_swing_low
+    int selected_high_time = use_lookback ? lookback_high_time : last_swing_high_time
+    int selected_low_time = use_lookback ? lookback_low_time : last_swing_low_time
+    [selected_high, selected_low, selected_high_time, selected_low_time]
+
+[swing_high_chart, swing_low_chart, swing_high_time_chart, swing_low_time_chart] = calc_dealing_range()
+[swing_high_tf, swing_low_tf, swing_high_time_tf, swing_low_time_tf] = request.security(syminfo.tickerid, request_timeframe, calc_dealing_range(), barmerge.gaps_on, barmerge.lookahead_off)
+
+swing_high = use_chart_timeframe ? swing_high_chart : swing_high_tf
+swing_low = use_chart_timeframe ? swing_low_chart : swing_low_tf
+swing_high_time = use_chart_timeframe ? swing_high_time_chart : swing_high_time_tf
+swing_low_time = use_chart_timeframe ? swing_low_time_chart : swing_low_time_tf
+
+range_ready = not na(swing_high) and not na(swing_low) and not na(swing_high_time) and not na(swing_low_time) and swing_high > swing_low
+range_top = range_ready ? swing_high : na
+range_bottom = range_ready ? swing_low : na
+range_mid = range_ready ? (range_top + range_bottom) / 2.0 : na
+range_start_time = range_ready ? math.min(swing_high_time, swing_low_time) : na
+
+safe_delete_box(box _box) =>
+    if not na(_box)
+        box.delete(_box)
+
+safe_delete_line(line _line) =>
+    if not na(_line)
+        line.delete(_line)
+
+safe_delete_label(label _label) =>
+    if not na(_label)
+        label.delete(_label)
+
+format_price(float _price) =>
+    str.tostring(_price, format.mintick)
+
+var int active_swing_high_time = na
+var int active_swing_low_time = na
+var box active_premium_box = na
+var box active_discount_box = na
+var line active_equilibrium_line = na
+var line active_high_line = na
+var line active_low_line = na
+var label active_premium_label = na
+var label active_discount_label = na
+var label active_equilibrium_label = na
+
+clear_active_range() =>
+    safe_delete_box(active_premium_box)
+    safe_delete_box(active_discount_box)
+    safe_delete_line(active_equilibrium_line)
+    safe_delete_line(active_high_line)
+    safe_delete_line(active_low_line)
+    safe_delete_label(active_premium_label)
+    safe_delete_label(active_discount_label)
+    safe_delete_label(active_equilibrium_label)
+
+new_range = range_ready and (na(active_swing_high_time) or na(active_swing_low_time) or swing_high_time != active_swing_high_time or swing_low_time != active_swing_low_time)
+
+if new_range
+    clear_active_range()
+    active_swing_high_time := swing_high_time
+    active_swing_low_time := swing_low_time
+    active_premium_box := box.new(range_start_time, range_top, time_close, range_mid, xloc=xloc.bar_time, border_color=color.new(premium_color, 100), bgcolor=show_premium_zone ? premium_color : color.new(premium_color, 100), extend=extend.none)
+    active_discount_box := box.new(range_start_time, range_mid, time_close, range_bottom, xloc=xloc.bar_time, border_color=color.new(discount_color, 100), bgcolor=show_discount_zone ? discount_color : color.new(discount_color, 100), extend=extend.none)
+    active_equilibrium_line := line.new(range_start_time, range_mid, time_close, range_mid, xloc=xloc.bar_time, extend=extend.none, color=show_equilibrium ? equilibrium_color : color.new(equilibrium_color, 100), width=1, style=line.style_dotted)
+    active_high_line := line.new(range_start_time, range_top, time_close, range_top, xloc=xloc.bar_time, extend=extend.none, color=show_range_high_low ? range_line_color : color.new(range_line_color, 100), width=1, style=line.style_dashed)
+    active_low_line := line.new(range_start_time, range_bottom, time_close, range_bottom, xloc=xloc.bar_time, extend=extend.none, color=show_range_high_low ? range_line_color : color.new(range_line_color, 100), width=1, style=line.style_dashed)
+    active_premium_label := show_labels ? label.new(time_close, range_top, "Premium", xloc=xloc.bar_time, style=label.style_label_left, color=label_color, textcolor=color.white, size=size.small) : na
+    active_discount_label := show_labels ? label.new(time_close, range_bottom, "Discount", xloc=xloc.bar_time, style=label.style_label_left, color=label_color, textcolor=color.white, size=size.small) : na
+    active_equilibrium_label := show_labels ? label.new(time_close, range_mid, "Equilibrium " + format_price(range_mid), xloc=xloc.bar_time, style=label.style_label_left, color=label_color, textcolor=color.white, size=size.small) : na
+
+if range_ready and not na(active_premium_box)
+    box.set_right(active_premium_box, time_close)
+    box.set_top(active_premium_box, range_top)
+    box.set_bottom(active_premium_box, range_mid)
+    box.set_bgcolor(active_premium_box, show_premium_zone ? premium_color : color.new(premium_color, 100))
+    box.set_right(active_discount_box, time_close)
+    box.set_top(active_discount_box, range_mid)
+    box.set_bottom(active_discount_box, range_bottom)
+    box.set_bgcolor(active_discount_box, show_discount_zone ? discount_color : color.new(discount_color, 100))
+    line.set_x2(active_equilibrium_line, time_close)
+    line.set_y1(active_equilibrium_line, range_mid)
+    line.set_y2(active_equilibrium_line, range_mid)
+    line.set_color(active_equilibrium_line, show_equilibrium ? equilibrium_color : color.new(equilibrium_color, 100))
+    line.set_x2(active_high_line, time_close)
+    line.set_y1(active_high_line, range_top)
+    line.set_y2(active_high_line, range_top)
+    line.set_color(active_high_line, show_range_high_low ? range_line_color : color.new(range_line_color, 100))
+    line.set_x2(active_low_line, time_close)
+    line.set_y1(active_low_line, range_bottom)
+    line.set_y2(active_low_line, range_bottom)
+    line.set_color(active_low_line, show_range_high_low ? range_line_color : color.new(range_line_color, 100))
+    if not na(active_premium_label)
+        label.set_x(active_premium_label, time_close)
+        label.set_y(active_premium_label, range_top)
+        label.set_color(active_premium_label, show_labels ? label_color : color.new(label_color, 100))
+        label.set_textcolor(active_premium_label, show_labels ? color.white : color.new(color.white, 100))
+    if not na(active_discount_label)
+        label.set_x(active_discount_label, time_close)
+        label.set_y(active_discount_label, range_bottom)
+        label.set_color(active_discount_label, show_labels ? label_color : color.new(label_color, 100))
+        label.set_textcolor(active_discount_label, show_labels ? color.white : color.new(color.white, 100))
+    if not na(active_equilibrium_label)
+        label.set_x(active_equilibrium_label, time_close)
+        label.set_y(active_equilibrium_label, range_mid)
+        label.set_text(active_equilibrium_label, "Equilibrium " + format_price(range_mid))
+        label.set_color(active_equilibrium_label, show_labels ? label_color : color.new(label_color, 100))
+        label.set_textcolor(active_equilibrium_label, show_labels ? color.white : color.new(color.white, 100))
+
+in_premium = range_ready and close <= range_top and close >= range_mid
+in_discount = range_ready and close <= range_mid and close >= range_bottom
+touches_equilibrium = range_ready and high >= range_mid and low <= range_mid
+premium_entered = in_premium and not in_premium[1]
+discount_entered = in_discount and not in_discount[1]
+equilibrium_touched = touches_equilibrium and not touches_equilibrium[1]
+
+alertcondition(new_range, title="Premium Discount Zones [Aventra] New Range", message="Premium Discount Zones [Aventra]: new dealing range detected.")
+alertcondition(premium_entered, title="Premium Discount Zones [Aventra] Premium Entered", message="Premium Discount Zones [Aventra]: price entered premium zone.")
+alertcondition(discount_entered, title="Premium Discount Zones [Aventra] Discount Entered", message="Premium Discount Zones [Aventra]: price entered discount zone.")
+alertcondition(equilibrium_touched, title="Premium Discount Zones [Aventra] Equilibrium Touched", message="Premium Discount Zones [Aventra]: price touched equilibrium.")

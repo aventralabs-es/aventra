@@ -1,0 +1,142 @@
+//@version=6
+// Aventra Version: 1.0.0
+indicator("Liquidity Zones [Aventra]", shorttitle="Liquidity Zones [Aventra]", overlay=true, max_boxes_count=100, max_labels_count=100)
+
+calculation_timeframe = input.timeframe("", "Calculation Timeframe")
+pivot_left = input.int(5, "Pivot Left Bars", minval=1)
+pivot_right = input.int(5, "Pivot Right Bars", minval=1)
+atr_length = input.int(14, "ATR Length", minval=1)
+equal_tolerance_atr = input.float(0.25, "Equal Level Tolerance ATR", minval=0.01, step=0.01)
+zone_padding_atr = input.float(0.10, "Zone Padding ATR", minval=0.0, step=0.01)
+max_zones = input.int(8, "Maximum Zones", minval=1, maxval=25)
+show_zone_labels = input.bool(true, "Show Zone Labels")
+show_sweep_labels = input.bool(true, "Show Sweep Labels")
+keep_swept_zones = input.bool(true, "Keep Swept Zones")
+buy_side_color = input.color(color.red, "Buy-Side Liquidity Color")
+sell_side_color = input.color(color.lime, "Sell-Side Liquidity Color")
+swept_color = input.color(color.gray, "Swept Zone Color")
+
+use_chart_timeframe = calculation_timeframe == ""
+request_timeframe = use_chart_timeframe ? timeframe.period : calculation_timeframe
+
+calc_liquidity_source() =>
+    float pivot_high = ta.pivothigh(high, pivot_left, pivot_right)
+    float pivot_low = ta.pivotlow(low, pivot_left, pivot_right)
+    float atr_value = ta.atr(atr_length)
+    [pivot_high, pivot_low, atr_value]
+
+[pivot_high_chart, pivot_low_chart, atr_chart] = calc_liquidity_source()
+[pivot_high_tf, pivot_low_tf, atr_tf] = request.security(syminfo.tickerid, request_timeframe, calc_liquidity_source(), barmerge.gaps_on, barmerge.lookahead_off)
+
+pivot_high = use_chart_timeframe ? pivot_high_chart : pivot_high_tf
+pivot_low = use_chart_timeframe ? pivot_low_chart : pivot_low_tf
+atr_value = use_chart_timeframe ? atr_chart : atr_tf
+
+new_pivot_high = not na(pivot_high) and na(pivot_high[1])
+new_pivot_low = not na(pivot_low) and na(pivot_low[1])
+tolerance = atr_value * equal_tolerance_atr
+padding = atr_value * zone_padding_atr
+
+var float previous_pivot_high = na
+var int previous_pivot_high_bar = na
+var float previous_pivot_low = na
+var int previous_pivot_low_bar = na
+
+var array<box> buy_side_boxes = array.new<box>()
+var array<float> buy_side_tops = array.new<float>()
+var array<float> buy_side_bottoms = array.new<float>()
+var array<bool> buy_side_active = array.new<bool>()
+var array<label> buy_side_labels = array.new<label>()
+
+var array<box> sell_side_boxes = array.new<box>()
+var array<float> sell_side_tops = array.new<float>()
+var array<float> sell_side_bottoms = array.new<float>()
+var array<bool> sell_side_active = array.new<bool>()
+var array<label> sell_side_labels = array.new<label>()
+
+trim_zones(array<box> _boxes, array<float> _tops, array<float> _bottoms, array<bool> _active, array<label> _labels) =>
+    while array.size(_boxes) > max_zones
+        box.delete(array.shift(_boxes))
+        array.shift(_tops)
+        array.shift(_bottoms)
+        array.shift(_active)
+    while array.size(_labels) > max_zones
+        label.delete(array.shift(_labels))
+
+add_zone(array<box> _boxes, array<float> _tops, array<float> _bottoms, array<bool> _active, array<label> _labels, int _left_bar, float _top, float _bottom, color _color, string _text) =>
+    box new_box = box.new(_left_bar, _top, bar_index, _bottom, border_color=color.new(_color, 0), bgcolor=color.new(_color, 85), extend=extend.right)
+    array.push(_boxes, new_box)
+    array.push(_tops, _top)
+    array.push(_bottoms, _bottom)
+    array.push(_active, true)
+    if show_zone_labels
+        label new_label = label.new(bar_index, (_top + _bottom) / 2.0, _text, style=label.style_label_left, color=color.new(_color, 0), textcolor=color.white, size=size.small)
+        array.push(_labels, new_label)
+    trim_zones(_boxes, _tops, _bottoms, _active, _labels)
+
+if new_pivot_high
+    int pivot_bar = bar_index - pivot_right
+    if not na(previous_pivot_high) and math.abs(pivot_high - previous_pivot_high) <= tolerance
+        float zone_top = math.max(pivot_high, previous_pivot_high) + padding
+        float zone_bottom = math.min(pivot_high, previous_pivot_high) - padding
+        int left_bar = na(previous_pivot_high_bar) ? pivot_bar : previous_pivot_high_bar
+        add_zone(buy_side_boxes, buy_side_tops, buy_side_bottoms, buy_side_active, buy_side_labels, left_bar, zone_top, zone_bottom, buy_side_color, "Buy-Side Liquidity")
+    previous_pivot_high := pivot_high
+    previous_pivot_high_bar := pivot_bar
+
+if new_pivot_low
+    int pivot_bar = bar_index - pivot_right
+    if not na(previous_pivot_low) and math.abs(pivot_low - previous_pivot_low) <= tolerance
+        float zone_top = math.max(pivot_low, previous_pivot_low) + padding
+        float zone_bottom = math.min(pivot_low, previous_pivot_low) - padding
+        int left_bar = na(previous_pivot_low_bar) ? pivot_bar : previous_pivot_low_bar
+        add_zone(sell_side_boxes, sell_side_tops, sell_side_bottoms, sell_side_active, sell_side_labels, left_bar, zone_top, zone_bottom, sell_side_color, "Sell-Side Liquidity")
+    previous_pivot_low := pivot_low
+    previous_pivot_low_bar := pivot_bar
+
+buy_side_sweep = false
+sell_side_sweep = false
+
+if array.size(buy_side_boxes) > 0
+    for i = 0 to array.size(buy_side_boxes) - 1
+        if array.get(buy_side_active, i)
+            box.set_right(array.get(buy_side_boxes, i), bar_index)
+            float zone_top = array.get(buy_side_tops, i)
+            float zone_bottom = array.get(buy_side_bottoms, i)
+            bool swept = high > zone_top and close < zone_top
+            if swept
+                buy_side_sweep := true
+                array.set(buy_side_active, i, false)
+                box.set_bgcolor(array.get(buy_side_boxes, i), keep_swept_zones ? color.new(swept_color, 88) : color.new(swept_color, 100))
+                box.set_border_color(array.get(buy_side_boxes, i), keep_swept_zones ? color.new(swept_color, 20) : color.new(swept_color, 100))
+        else if keep_swept_zones
+            box.set_right(array.get(buy_side_boxes, i), bar_index)
+
+if array.size(sell_side_boxes) > 0
+    for i = 0 to array.size(sell_side_boxes) - 1
+        if array.get(sell_side_active, i)
+            box.set_right(array.get(sell_side_boxes, i), bar_index)
+            float zone_top = array.get(sell_side_tops, i)
+            float zone_bottom = array.get(sell_side_bottoms, i)
+            bool swept = low < zone_bottom and close > zone_bottom
+            if swept
+                sell_side_sweep := true
+                array.set(sell_side_active, i, false)
+                box.set_bgcolor(array.get(sell_side_boxes, i), keep_swept_zones ? color.new(swept_color, 88) : color.new(swept_color, 100))
+                box.set_border_color(array.get(sell_side_boxes, i), keep_swept_zones ? color.new(swept_color, 20) : color.new(swept_color, 100))
+        else if keep_swept_zones
+            box.set_right(array.get(sell_side_boxes, i), bar_index)
+
+if show_zone_labels
+    if array.size(buy_side_labels) > 0
+        for i = 0 to array.size(buy_side_labels) - 1
+            label.set_x(array.get(buy_side_labels, i), bar_index)
+    if array.size(sell_side_labels) > 0
+        for i = 0 to array.size(sell_side_labels) - 1
+            label.set_x(array.get(sell_side_labels, i), bar_index)
+
+plotshape(show_sweep_labels and buy_side_sweep, title="Buy-Side Sweep", text="BUY-SIDE SWEEP", style=shape.labeldown, location=location.abovebar, color=buy_side_color, textcolor=color.white, size=size.small)
+plotshape(show_sweep_labels and sell_side_sweep, title="Sell-Side Sweep", text="SELL-SIDE SWEEP", style=shape.labelup, location=location.belowbar, color=sell_side_color, textcolor=color.black, size=size.small)
+
+alertcondition(buy_side_sweep, title="Liquidity Zones [Aventra] Buy-Side Sweep", message="Liquidity Zones [Aventra]: Price swept buy-side liquidity.")
+alertcondition(sell_side_sweep, title="Liquidity Zones [Aventra] Sell-Side Sweep", message="Liquidity Zones [Aventra]: Price swept sell-side liquidity.")

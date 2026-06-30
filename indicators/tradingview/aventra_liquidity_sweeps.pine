@@ -1,0 +1,167 @@
+﻿//@version=6
+// Aventra Version: 2.5.0
+indicator("Liquidity Sweeps [Aventra]", shorttitle="Liquidity Sweeps [Aventra]", overlay=true, max_lines_count=500, max_labels_count=500, max_bars_back=5000)
+
+calculation_timeframe = input.timeframe("", "Calculation Timeframe")
+swing_length = input.int(5, "Swing Length", minval=2, maxval=5000)
+lookback_bars = input.int(300, "Lookback Bars", minval=5, maxval=5000)
+atr_length = input.int(14, "ATR Length", minval=1)
+sweep_tolerance_atr = input.float(0.05, "Sweep Tolerance ATR", minval=0.0, step=0.01)
+sweep_detection = input.string("Wick Only", "Sweep Detection", options=["Wick Only", "Close Back", "Breakout Touch"])
+show_sweep_markers = input.bool(true, "Show Sweep Markers")
+show_sweep_lines = input.bool(true, "Show Sweep Lines")
+show_sweep_labels = input.bool(false, "Show Sweep Labels")
+keep_sweeps = input.bool(true, "Keep Sweeps")
+maximum_sweeps = input.int(100, "Maximum Sweeps", minval=1, maxval=250)
+bullish_sweep_color = input.color(color.new(color.lime, 70), "Bullish Sweep Color")
+bearish_sweep_color = input.color(color.new(color.red, 70), "Bearish Sweep Color")
+label_color = input.color(color.new(color.black, 50), "Label Color")
+
+use_chart_timeframe = calculation_timeframe == ""
+request_timeframe = use_chart_timeframe ? timeframe.period : calculation_timeframe
+
+calc_sweep_source() =>
+    [open, high, low, close, time, time_close, ta.atr(atr_length)]
+
+[open_chart, high_chart, low_chart, close_chart, bar_time_chart, bar_time_close_chart, atr_chart] = calc_sweep_source()
+[open_tf, high_tf, low_tf, close_tf, bar_time_tf, bar_time_close_tf, atr_tf] = request.security(syminfo.tickerid, request_timeframe, calc_sweep_source(), barmerge.gaps_off, barmerge.lookahead_off)
+
+source_open = use_chart_timeframe ? open_chart : open_tf
+source_high = use_chart_timeframe ? high_chart : high_tf
+source_low = use_chart_timeframe ? low_chart : low_tf
+source_close = use_chart_timeframe ? close_chart : close_tf
+source_time = use_chart_timeframe ? bar_time_chart : bar_time_tf
+source_time_close = use_chart_timeframe ? bar_time_close_chart : bar_time_close_tf
+atr_value = use_chart_timeframe ? atr_chart : atr_tf
+sweep_tolerance = atr_value * sweep_tolerance_atr
+var array<line> sweep_lines = array.new<line>()
+var array<label> sweep_labels = array.new<label>()
+
+safe_delete_line(line _line) =>
+    if not na(_line)
+        line.delete(_line)
+
+safe_delete_label(label _label) =>
+    if not na(_label)
+        label.delete(_label)
+
+clear_sweeps() =>
+    while array.size(sweep_lines) > 0
+        safe_delete_line(array.shift(sweep_lines))
+    while array.size(sweep_labels) > 0
+        safe_delete_label(array.shift(sweep_labels))
+
+trim_sweeps() =>
+    while array.size(sweep_lines) > maximum_sweeps
+        safe_delete_line(array.shift(sweep_lines))
+    while array.size(sweep_labels) > maximum_sweeps
+        safe_delete_label(array.shift(sweep_labels))
+
+is_pivot_high_offset(int _offset) =>
+    bool result = true
+    if bar_index <= _offset + swing_length
+        result := false
+    else
+        for k = 1 to swing_length
+            result := result and high[_offset] > high[_offset + k] and high[_offset] >= high[_offset - k]
+    result
+
+is_pivot_low_offset(int _offset) =>
+    bool result = true
+    if bar_index <= _offset + swing_length
+        result := false
+    else
+        for k = 1 to swing_length
+            result := result and low[_offset] < low[_offset + k] and low[_offset] <= low[_offset - k]
+    result
+
+is_buy_side_sweep_at(float _level, int _offset) =>
+    bool touch = high[_offset] >= _level - sweep_tolerance
+    bool close_back = touch and close[_offset] < _level
+    bool wick_only = touch and open[_offset] < _level and close[_offset] < _level
+    sweep_detection == "Breakout Touch" ? touch : sweep_detection == "Close Back" ? close_back : wick_only
+
+is_sell_side_sweep_at(float _level, int _offset) =>
+    bool touch = low[_offset] <= _level + sweep_tolerance
+    bool close_back = touch and close[_offset] > _level
+    bool wick_only = touch and open[_offset] > _level and close[_offset] > _level
+    sweep_detection == "Breakout Touch" ? touch : sweep_detection == "Close Back" ? close_back : wick_only
+
+was_buy_side_consumed_after(float _level, int _pivot_offset) =>
+    bool consumed = false
+    if _pivot_offset > 1
+        for j = 1 to _pivot_offset - 1
+            bool wick_touch = high[j] > _level
+            consumed := consumed or wick_touch
+    consumed
+
+was_sell_side_consumed_after(float _level, int _pivot_offset) =>
+    bool consumed = false
+    if _pivot_offset > 1
+        for j = 1 to _pivot_offset - 1
+            bool wick_touch = low[j] < _level
+            consumed := consumed or wick_touch
+    consumed
+
+find_bearish_sweep() =>
+    bool found = false
+    float level = na
+    int level_time = na
+    int max_offset = math.min(lookback_bars, bar_index - swing_length)
+    if max_offset >= swing_length
+        for i = swing_length to max_offset
+            if not found and is_pivot_high_offset(i)
+                float candidate = high[i]
+                if is_buy_side_sweep_at(candidate, 0) and not was_buy_side_consumed_after(candidate, i)
+                    found := true
+                    level := candidate
+                    level_time := time[i]
+    [found, level, level_time]
+
+find_bullish_sweep() =>
+    bool found = false
+    float level = na
+    int level_time = na
+    int max_offset = math.min(lookback_bars, bar_index - swing_length)
+    if max_offset >= swing_length
+        for i = swing_length to max_offset
+            if not found and is_pivot_low_offset(i)
+                float candidate = low[i]
+                if is_sell_side_sweep_at(candidate, 0) and not was_sell_side_consumed_after(candidate, i)
+                    found := true
+                    level := candidate
+                    level_time := time[i]
+    [found, level, level_time]
+add_sweep(int _start_time, float _level, bool _bullish) =>
+    if not keep_sweeps
+        clear_sweeps()
+    color sweep_color = _bullish ? bullish_sweep_color : bearish_sweep_color
+    string label_text = _bullish ? "Bullish Sweep" : "Bearish Sweep"
+    line sweep_line = show_sweep_lines ? line.new(_start_time, _level, source_time, _level, xloc=xloc.bar_time, extend=extend.none, color=sweep_color, width=2, style=line.style_solid) : na
+    label sweep_label = show_sweep_labels ? label.new(source_time, _level, label_text, xloc=xloc.bar_time, style=_bullish ? label.style_label_up : label.style_label_down, color=label_color, textcolor=color.white, size=size.small) : na
+    array.push(sweep_lines, sweep_line)
+    array.push(sweep_labels, sweep_label)
+    trim_sweeps()
+
+[bearish_sweep, bearish_sweep_level, bearish_sweep_time] = find_bearish_sweep()
+[bullish_sweep, bullish_sweep_level, bullish_sweep_time] = find_bullish_sweep()
+
+if bearish_sweep
+    add_sweep(bearish_sweep_time, bearish_sweep_level, false)
+
+if bullish_sweep
+    add_sweep(bullish_sweep_time, bullish_sweep_level, true)
+
+plotshape(show_sweep_markers and bullish_sweep, title="Liquidity Sweeps [Aventra] Bullish Sweep Marker", style=shape.triangleup, location=location.belowbar, color=bullish_sweep_color, size=size.tiny, text="LS", textcolor=bullish_sweep_color)
+plotshape(show_sweep_markers and bearish_sweep, title="Liquidity Sweeps [Aventra] Bearish Sweep Marker", style=shape.triangledown, location=location.abovebar, color=bearish_sweep_color, size=size.tiny, text="LS", textcolor=bearish_sweep_color)
+
+alertcondition(bullish_sweep, title="Liquidity Sweeps [Aventra] Bullish Sweep", message="Liquidity Sweeps [Aventra]: bullish liquidity sweep detected.")
+alertcondition(bearish_sweep, title="Liquidity Sweeps [Aventra] Bearish Sweep", message="Liquidity Sweeps [Aventra]: bearish liquidity sweep detected.")
+
+
+
+
+
+
+
+

@@ -1,0 +1,256 @@
+//@version=6
+// Aventra Version: 1.0.3
+indicator("MA Crossover Pullback Signals [Aventra]", shorttitle="MA Crossover Pullback Signals [Aventra]", overlay=true, max_lines_count=500, max_labels_count=500, max_boxes_count=200, max_bars_back=5000)
+
+calculation_timeframe = input.timeframe("", "Calculation Timeframe")
+signal_mode = input.string("Crossover + Pullback", "Signal Mode", options=["Crossover", "Pullback", "Crossover + Pullback"])
+signal_direction = input.string("Both", "Signal Direction", options=["Both", "Bullish Only", "Bearish Only"])
+fast_ma_length = input.int(21, "Fast MA Length", minval=1)
+slow_ma_length = input.int(55, "Slow MA Length", minval=1)
+ma_type = input.string("EMA", "MA Type", options=["EMA", "SMA"])
+pullback_source = input.string("Fast MA", "Pullback Source", options=["Fast MA", "Slow MA", "Both"])
+pullback_window_bars = input.int(10, "Pullback Window Bars", minval=1, maxval=200)
+atr_length = input.int(14, "ATR Length", minval=1)
+pullback_tolerance_atr = input.float(0.25, "Pullback Tolerance ATR", minval=0.0, step=0.01)
+confirmation_buffer_atr = input.float(0.05, "Confirmation Buffer ATR", minval=0.0, step=0.01)
+confirmation_mode = input.string("Balanced", "Confirmation Mode", options=["Aggressive", "Balanced", "Conservative"])
+use_volume_filter = input.bool(true, "Use Volume Filter")
+volume_ma_length = input.int(21, "Volume MA Length", minval=1)
+minimum_relative_volume = input.float(1.20, "Minimum Relative Volume", minval=0.0, step=0.05)
+use_rsi_filter = input.bool(true, "Use RSI Filter")
+rsi_length = input.int(14, "RSI Length", minval=1)
+bullish_rsi_min = input.float(50.0, "Bullish RSI Minimum", minval=0.0, maxval=100.0, step=0.5)
+bearish_rsi_max = input.float(50.0, "Bearish RSI Maximum", minval=0.0, maxval=100.0, step=0.5)
+require_slow_ma_slope = input.bool(true, "Require Slow MA Slope")
+slope_bars = input.int(5, "Slope Bars", minval=1, maxval=100)
+show_fast_ma = input.bool(true, "Show Fast MA")
+show_slow_ma = input.bool(true, "Show Slow MA")
+show_ma_trend_fill = input.bool(true, "Show MA Trend Fill")
+show_signal_markers = input.bool(true, "Show Signal Markers")
+show_signal_labels = input.bool(true, "Show Signal Labels")
+show_pullback_lines = input.bool(true, "Show Pullback Lines")
+show_pullback_zones = input.bool(true, "Show Pullback Zones")
+keep_signals = input.bool(true, "Keep Signals")
+maximum_signals = input.int(100, "Maximum Signals", minval=1, maxval=250)
+signal_label_offset_atr = input.float(0.35, "Signal Label Offset ATR", minval=0.0, step=0.05)
+fast_ma_color = input.color(color.new(color.orange, 40), "Fast MA Color")
+slow_ma_color = input.color(color.new(color.rgb(33, 150, 243), 30), "Slow MA Color")
+bullish_ma_fill_color = input.color(color.new(color.lime, 90), "Bullish MA Fill Color")
+bearish_ma_fill_color = input.color(color.new(color.red, 90), "Bearish MA Fill Color")
+bullish_signal_color = input.color(color.new(color.lime, 50), "Bullish Signal Color")
+bearish_signal_color = input.color(color.new(color.red, 50), "Bearish Signal Color")
+bullish_zone_color = input.color(color.new(color.teal, 90), "Bullish Pullback Zone Color")
+bearish_zone_color = input.color(color.new(color.orange, 90), "Bearish Pullback Zone Color")
+
+use_chart_timeframe = calculation_timeframe == ""
+request_timeframe = use_chart_timeframe ? timeframe.period : calculation_timeframe
+
+calc_ma(float _source, int _length, string _type) =>
+    _type == "EMA" ? ta.ema(_source, _length) : ta.sma(_source, _length)
+
+calc_ma_crossover_pullback_source() =>
+    float fast_ma = calc_ma(close, fast_ma_length, ma_type)
+    float slow_ma = calc_ma(close, slow_ma_length, ma_type)
+    float atr_value = ta.atr(atr_length)
+    float tolerance = atr_value * pullback_tolerance_atr
+    float confirmation_buffer = atr_value * confirmation_buffer_atr
+    float volume_ma = ta.sma(volume, volume_ma_length)
+    float relative_volume = not na(volume_ma) and volume_ma != 0 ? volume / volume_ma : na
+    float rsi_value = ta.rsi(close, rsi_length)
+    bool volume_ok = not use_volume_filter or (not na(relative_volume) and relative_volume >= minimum_relative_volume)
+    bool bullish_rsi_ok = not use_rsi_filter or (not na(rsi_value) and rsi_value >= bullish_rsi_min)
+    bool bearish_rsi_ok = not use_rsi_filter or (not na(rsi_value) and rsi_value <= bearish_rsi_max)
+    bool bullish_slope_ok = not require_slow_ma_slope or slow_ma >= slow_ma[slope_bars]
+    bool bearish_slope_ok = not require_slow_ma_slope or slow_ma <= slow_ma[slope_bars]
+    bool trend_bullish = not na(slow_ma) and close > slow_ma and bullish_slope_ok
+    bool trend_bearish = not na(slow_ma) and close < slow_ma and bearish_slope_ok
+    bool bullish_cross_signal = ta.crossover(fast_ma, slow_ma) and volume_ok and bullish_rsi_ok and bullish_slope_ok
+    bool bearish_cross_signal = ta.crossunder(fast_ma, slow_ma) and volume_ok and bearish_rsi_ok and bearish_slope_ok
+    bool bullish_fast_touch = (pullback_source == "Fast MA" or pullback_source == "Both") ? not na(fast_ma) and low <= fast_ma + tolerance : false
+    bool bullish_slow_touch = (pullback_source == "Slow MA" or pullback_source == "Both") ? not na(slow_ma) and low <= slow_ma + tolerance : false
+    bool bearish_fast_touch = (pullback_source == "Fast MA" or pullback_source == "Both") ? not na(fast_ma) and high >= fast_ma - tolerance : false
+    bool bearish_slow_touch = (pullback_source == "Slow MA" or pullback_source == "Both") ? not na(slow_ma) and high >= slow_ma - tolerance : false
+    float bullish_touch_level = bullish_fast_touch ? fast_ma : bullish_slow_touch ? slow_ma : na
+    float bearish_touch_level = bearish_fast_touch ? fast_ma : bearish_slow_touch ? slow_ma : na
+    float bullish_confirmation_level = pullback_source == "Slow MA" ? slow_ma : fast_ma
+    float bearish_confirmation_level = pullback_source == "Slow MA" ? slow_ma : fast_ma
+    bool bullish_pullback_touch = trend_bullish and not na(bullish_touch_level) and close >= slow_ma
+    bool bearish_pullback_touch = trend_bearish and not na(bearish_touch_level) and close <= slow_ma
+    var bool bullish_pending = false
+    var bool bearish_pending = false
+    var float bullish_pullback_level = na
+    var float bearish_pullback_level = na
+    var float bullish_zone_top = na
+    var float bullish_zone_bottom = na
+    var float bearish_zone_top = na
+    var float bearish_zone_bottom = na
+    var int bullish_pullback_time = na
+    var int bearish_pullback_time = na
+    var int bullish_pullback_bar = na
+    var int bearish_pullback_bar = na
+
+    if bullish_pullback_touch
+        bullish_pending := true
+        bearish_pending := false
+        bullish_pullback_level := bullish_touch_level
+        bullish_zone_top := bullish_touch_level + tolerance
+        bullish_zone_bottom := bullish_touch_level - tolerance
+        bullish_pullback_time := time
+        bullish_pullback_bar := bar_index
+
+    if bearish_pullback_touch
+        bearish_pending := true
+        bullish_pending := false
+        bearish_pullback_level := bearish_touch_level
+        bearish_zone_top := bearish_touch_level + tolerance
+        bearish_zone_bottom := bearish_touch_level - tolerance
+        bearish_pullback_time := time
+        bearish_pullback_bar := bar_index
+
+    bool bullish_expired = bullish_pending and bar_index - bullish_pullback_bar > pullback_window_bars
+    bool bearish_expired = bearish_pending and bar_index - bearish_pullback_bar > pullback_window_bars
+
+    if bullish_expired or not trend_bullish
+        bullish_pending := false
+
+    if bearish_expired or not trend_bearish
+        bearish_pending := false
+
+    bool bullish_aggressive = close > open and close > bullish_confirmation_level
+    bool bearish_aggressive = close < open and close < bearish_confirmation_level
+    bool bullish_balanced = close > high[1] + confirmation_buffer and close > bullish_confirmation_level
+    bool bearish_balanced = close < low[1] - confirmation_buffer and close < bearish_confirmation_level
+    bool bullish_conservative = bullish_balanced and close > open and close > close[1]
+    bool bearish_conservative = bearish_balanced and close < open and close < close[1]
+    bool bullish_confirmation = confirmation_mode == "Aggressive" ? bullish_aggressive : confirmation_mode == "Balanced" ? bullish_balanced : bullish_conservative
+    bool bearish_confirmation = confirmation_mode == "Aggressive" ? bearish_aggressive : confirmation_mode == "Balanced" ? bearish_balanced : bearish_conservative
+    bool bullish_pullback_signal = bullish_pending and bullish_confirmation and volume_ok and bullish_rsi_ok
+    bool bearish_pullback_signal = bearish_pending and bearish_confirmation and volume_ok and bearish_rsi_ok
+
+    if bullish_pullback_signal
+        bullish_pending := false
+
+    if bearish_pullback_signal
+        bearish_pending := false
+
+    [bullish_cross_signal, bearish_cross_signal, bullish_pullback_signal, bearish_pullback_signal, fast_ma, slow_ma, bullish_pullback_level, bearish_pullback_level, bullish_zone_top, bullish_zone_bottom, bearish_zone_top, bearish_zone_bottom, bullish_pullback_time, bearish_pullback_time, time, time_close, close, atr_value, relative_volume, rsi_value]
+
+[bullish_cross_chart, bearish_cross_chart, bullish_pullback_chart, bearish_pullback_chart, fast_ma_chart, slow_ma_chart, bullish_level_chart, bearish_level_chart, bullish_zone_top_chart, bullish_zone_bottom_chart, bearish_zone_top_chart, bearish_zone_bottom_chart, bullish_pullback_time_chart, bearish_pullback_time_chart, source_time_chart, source_time_close_chart, source_close_chart, atr_chart, relative_volume_chart, rsi_chart] = calc_ma_crossover_pullback_source()
+[bullish_cross_tf, bearish_cross_tf, bullish_pullback_tf, bearish_pullback_tf, fast_ma_tf, slow_ma_tf, bullish_level_tf, bearish_level_tf, bullish_zone_top_tf, bullish_zone_bottom_tf, bearish_zone_top_tf, bearish_zone_bottom_tf, bullish_pullback_time_tf, bearish_pullback_time_tf, source_time_tf, source_time_close_tf, source_close_tf, atr_tf, relative_volume_tf, rsi_tf] = request.security(syminfo.tickerid, request_timeframe, calc_ma_crossover_pullback_source(), barmerge.gaps_off, barmerge.lookahead_off)
+
+bool bullish_cross_raw = use_chart_timeframe ? bullish_cross_chart : bullish_cross_tf
+bool bearish_cross_raw = use_chart_timeframe ? bearish_cross_chart : bearish_cross_tf
+bool bullish_pullback_raw = use_chart_timeframe ? bullish_pullback_chart : bullish_pullback_tf
+bool bearish_pullback_raw = use_chart_timeframe ? bearish_pullback_chart : bearish_pullback_tf
+float fast_ma_value = use_chart_timeframe ? fast_ma_chart : fast_ma_tf
+float slow_ma_value = use_chart_timeframe ? slow_ma_chart : slow_ma_tf
+float bullish_level = use_chart_timeframe ? bullish_level_chart : bullish_level_tf
+float bearish_level = use_chart_timeframe ? bearish_level_chart : bearish_level_tf
+float bullish_zone_top = use_chart_timeframe ? bullish_zone_top_chart : bullish_zone_top_tf
+float bullish_zone_bottom = use_chart_timeframe ? bullish_zone_bottom_chart : bullish_zone_bottom_tf
+float bearish_zone_top = use_chart_timeframe ? bearish_zone_top_chart : bearish_zone_top_tf
+float bearish_zone_bottom = use_chart_timeframe ? bearish_zone_bottom_chart : bearish_zone_bottom_tf
+int bullish_pullback_time = use_chart_timeframe ? bullish_pullback_time_chart : bullish_pullback_time_tf
+int bearish_pullback_time = use_chart_timeframe ? bearish_pullback_time_chart : bearish_pullback_time_tf
+int source_time = use_chart_timeframe ? source_time_chart : source_time_tf
+float source_close = use_chart_timeframe ? source_close_chart : source_close_tf
+float source_atr = use_chart_timeframe ? atr_chart : atr_tf
+float source_relative_volume = use_chart_timeframe ? relative_volume_chart : relative_volume_tf
+float source_rsi = use_chart_timeframe ? rsi_chart : rsi_tf
+
+fast_ma_plot = plot(show_fast_ma ? fast_ma_value : na, title="Fast MA", color=fast_ma_color, linewidth=1)
+slow_ma_plot = plot(show_slow_ma ? slow_ma_value : na, title="Slow MA", color=slow_ma_color, linewidth=2)
+color ma_trend_fill_color = show_ma_trend_fill and not na(fast_ma_value) and not na(slow_ma_value) ? fast_ma_value > slow_ma_value ? bullish_ma_fill_color : fast_ma_value < slow_ma_value ? bearish_ma_fill_color : na : na
+fill(fast_ma_plot, slow_ma_plot, color=ma_trend_fill_color, title="MA Trend Fill")
+
+var int last_bullish_cross_time = na
+var int last_bearish_cross_time = na
+var int last_bullish_pullback_time = na
+var int last_bearish_pullback_time = na
+var array<line> signal_lines = array.new<line>()
+var array<box> signal_boxes = array.new<box>()
+var array<label> signal_markers = array.new<label>()
+var array<label> signal_labels = array.new<label>()
+
+safe_delete_line(line _line) =>
+    if not na(_line)
+        line.delete(_line)
+
+safe_delete_box(box _box) =>
+    if not na(_box)
+        box.delete(_box)
+
+safe_delete_label(label _label) =>
+    if not na(_label)
+        label.delete(_label)
+
+clear_signals() =>
+    while array.size(signal_lines) > 0
+        safe_delete_line(array.shift(signal_lines))
+    while array.size(signal_boxes) > 0
+        safe_delete_box(array.shift(signal_boxes))
+    while array.size(signal_markers) > 0
+        safe_delete_label(array.shift(signal_markers))
+    while array.size(signal_labels) > 0
+        safe_delete_label(array.shift(signal_labels))
+
+trim_signals() =>
+    while array.size(signal_lines) > maximum_signals
+        safe_delete_line(array.shift(signal_lines))
+    while array.size(signal_boxes) > maximum_signals
+        safe_delete_box(array.shift(signal_boxes))
+    while array.size(signal_markers) > maximum_signals
+        safe_delete_label(array.shift(signal_markers))
+    while array.size(signal_labels) > maximum_signals
+        safe_delete_label(array.shift(signal_labels))
+
+add_signal(int _anchor_time, int _signal_time, float _price, float _zone_top, float _zone_bottom, float _atr, float _relative_volume, float _rsi, bool _bullish, bool _pullback) =>
+    if not keep_signals
+        clear_signals()
+    color signal_color = _bullish ? bullish_signal_color : bearish_signal_color
+    color zone_color = _bullish ? bullish_zone_color : bearish_zone_color
+    string base_text = _bullish ? (_pullback ? "Bullish MA Pullback" : "Bullish MA Crossover") : (_pullback ? "Bearish MA Pullback" : "Bearish MA Crossover")
+    string rel_vol_text = use_volume_filter and not na(_relative_volume) ? " | Rel Vol " + str.tostring(_relative_volume, "#.##") + "x" : ""
+    string rsi_text = use_rsi_filter and not na(_rsi) ? " | RSI " + str.tostring(_rsi, "#.#") : ""
+    string label_text = base_text + rel_vol_text + rsi_text
+    line pullback_line = _pullback and show_pullback_lines and not na(_anchor_time) and not na(_signal_time) and not na(_price) ? line.new(_anchor_time, _price, _signal_time, _price, xloc=xloc.bar_time, extend=extend.none, color=signal_color, width=2, style=line.style_solid) : na
+    box pullback_box = _pullback and show_pullback_zones and not na(_anchor_time) and not na(_signal_time) and not na(_zone_top) and not na(_zone_bottom) ? box.new(_anchor_time, _zone_top, _signal_time, _zone_bottom, xloc=xloc.bar_time, border_color=color.new(zone_color, 100), bgcolor=zone_color) : na
+    label marker = show_signal_markers and not na(_signal_time) and not na(_price) ? label.new(_signal_time, _price, "", xloc=xloc.bar_time, style=_pullback ? (_bullish ? label.style_triangleup : label.style_triangledown) : label.style_xcross, color=signal_color, textcolor=signal_color, size=size.tiny) : na
+    float label_offset = _atr * signal_label_offset_atr
+    float label_y = _bullish ? _price - label_offset : _price + label_offset
+    label signal_label = show_signal_labels and not na(_signal_time) and not na(_price) ? label.new(_signal_time, label_y, label_text, xloc=xloc.bar_time, style=_bullish ? label.style_label_up : label.style_label_down, color=color.new(signal_color, 100), textcolor=signal_color, size=size.small) : na
+    array.push(signal_lines, pullback_line)
+    array.push(signal_boxes, pullback_box)
+    array.push(signal_markers, marker)
+    array.push(signal_labels, signal_label)
+    trim_signals()
+
+bool allow_cross = signal_mode == "Crossover" or signal_mode == "Crossover + Pullback"
+bool allow_pullback = signal_mode == "Pullback" or signal_mode == "Crossover + Pullback"
+bool allow_bullish = signal_direction == "Both" or signal_direction == "Bullish Only"
+bool allow_bearish = signal_direction == "Both" or signal_direction == "Bearish Only"
+bool bullish_cross_signal = allow_cross and allow_bullish and bullish_cross_raw and (na(last_bullish_cross_time) or source_time != last_bullish_cross_time)
+bool bearish_cross_signal = allow_cross and allow_bearish and bearish_cross_raw and (na(last_bearish_cross_time) or source_time != last_bearish_cross_time)
+bool bullish_pullback_signal = allow_pullback and allow_bullish and bullish_pullback_raw and (na(last_bullish_pullback_time) or source_time != last_bullish_pullback_time)
+bool bearish_pullback_signal = allow_pullback and allow_bearish and bearish_pullback_raw and (na(last_bearish_pullback_time) or source_time != last_bearish_pullback_time)
+
+if bullish_cross_signal
+    add_signal(source_time, source_time, source_close, na, na, source_atr, source_relative_volume, source_rsi, true, false)
+    last_bullish_cross_time := source_time
+
+if bearish_cross_signal
+    add_signal(source_time, source_time, source_close, na, na, source_atr, source_relative_volume, source_rsi, false, false)
+    last_bearish_cross_time := source_time
+
+if bullish_pullback_signal
+    add_signal(bullish_pullback_time, source_time, bullish_level, bullish_zone_top, bullish_zone_bottom, source_atr, source_relative_volume, source_rsi, true, true)
+    last_bullish_pullback_time := source_time
+
+if bearish_pullback_signal
+    add_signal(bearish_pullback_time, source_time, bearish_level, bearish_zone_top, bearish_zone_bottom, source_atr, source_relative_volume, source_rsi, false, true)
+    last_bearish_pullback_time := source_time
+
+alertcondition(bullish_cross_signal, title="MA Crossover Pullback Signals [Aventra] Bullish Crossover", message="MA Crossover Pullback Signals [Aventra]: bullish MA crossover detected.")
+alertcondition(bearish_cross_signal, title="MA Crossover Pullback Signals [Aventra] Bearish Crossover", message="MA Crossover Pullback Signals [Aventra]: bearish MA crossover detected.")
+alertcondition(bullish_pullback_signal, title="MA Crossover Pullback Signals [Aventra] Bullish Pullback", message="MA Crossover Pullback Signals [Aventra]: bullish MA pullback detected.")
+alertcondition(bearish_pullback_signal, title="MA Crossover Pullback Signals [Aventra] Bearish Pullback", message="MA Crossover Pullback Signals [Aventra]: bearish MA pullback detected.")

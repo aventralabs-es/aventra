@@ -1,0 +1,705 @@
+//@version=6
+// Aventra Version: 1.6.5
+indicator("Turtle Soup Signals [Aventra]", shorttitle="Turtle Soup Signals [Aventra]", overlay=true, max_lines_count=500, max_labels_count=500, max_boxes_count=200, max_bars_back=5000)
+
+calculation_timeframe = input.timeframe("240", "Swing Calculation Timeframe")
+use_swing_source = input.bool(true, "Use Swing Sweep Source")
+use_htf_fvg_source = input.bool(false, "Use HTF FVG Source")
+fvg_timeframe = input.timeframe("240", "FVG Timeframe")
+swing_length = input.int(5, "Swing Length", minval=2, maxval=5000)
+lookback_bars = input.int(50, "Lookback Bars", minval=10, maxval=5000)
+atr_length = input.int(14, "ATR Length", minval=1)
+sweep_tolerance_atr = input.float(0.05, "Sweep Tolerance ATR", minval=0.0, step=0.01)
+signal_mode = input.string("Balanced", "Signal Mode", options=["Aggressive", "Balanced", "Conservative"])
+signal_confirmation = input.string("Sweep + MSS + FVG Entry", "Signal Confirmation", options=["Sweep Only", "Sweep + MSS", "Sweep + MSS + FVG Entry"])
+minimum_sweep_atr = input.float(0.10, "Minimum Sweep ATR", minval=0.0, step=0.01)
+signal_cooldown_bars = input.int(10, "Signal Cooldown Bars", minval=0, maxval=500)
+minimum_fvg_atr = input.float(0.10, "Minimum FVG ATR", minval=0.0, step=0.01)
+show_signal_markers = input.bool(true, "Show Signal Markers")
+show_sweep_lines = input.bool(true, "Show Sweep Lines")
+show_signal_labels = input.bool(true, "Show Signal Labels")
+signal_label_offset_atr = input.float(0.35, "Signal Label Offset ATR", minval=0.0, step=0.05)
+show_htf_fvg = input.bool(false, "Show HTF FVG")
+keep_mitigated_htf_fvg = input.bool(true, "Keep Mitigated HTF FVG")
+show_fvg_midpoint = input.bool(true, "Show FVG Midpoint")
+show_fvg_labels = input.bool(true, "Show FVG Labels")
+show_reaction_fvg = input.bool(true, "Show Reaction FVG")
+reaction_fvg_timeframe = input.timeframe("15", "Reaction FVG Timeframe")
+reaction_fvg_window = input.int(10, "Reaction FVG Window", minval=1, maxval=100)
+show_mss = input.bool(true, "Show MSS")
+mss_label_offset_atr = input.float(0.65, "MSS Label Offset ATR", minval=0.0, step=0.05)
+keep_signals = input.bool(true, "Keep Signals")
+maximum_signals = input.int(55, "Maximum Signals", minval=1, maxval=250)
+maximum_htf_fvg = input.int(55, "Maximum HTF FVG", minval=1, maxval=200)
+maximum_reaction_fvg = input.int(1, "Maximum Reaction FVG", minval=1, maxval=100)
+maximum_mss = input.int(55, "Maximum MSS", minval=1, maxval=100)
+bullish_signal_color = input.color(color.new(color.lime, 50), "Bullish Signal Color")
+bearish_signal_color = input.color(color.new(color.red, 50), "Bearish Signal Color")
+bullish_htf_fvg_color = input.color(color.new(color.teal, 90), "Bullish HTF FVG Color")
+bearish_htf_fvg_color = input.color(color.new(color.orange, 90), "Bearish HTF FVG Color")
+mitigated_htf_fvg_color = input.color(color.new(color.gray, 90), "Mitigated HTF FVG Color")
+bullish_reaction_fvg_color = input.color(color.new(color.lime, 90), "Bullish Reaction FVG Color")
+bearish_reaction_fvg_color = input.color(color.new(color.red, 90), "Bearish Reaction FVG Color")
+fvg_midpoint_color = input.color(color.new(color.white, 80), "FVG Midpoint Color")
+mss_bullish_color = input.color(color.new(color.aqua, 50), "Bullish MSS Color")
+mss_bearish_color = input.color(color.new(color.fuchsia, 50), "Bearish MSS Color")
+
+use_chart_timeframe = calculation_timeframe == ""
+request_timeframe = use_chart_timeframe ? timeframe.period : calculation_timeframe
+
+format_tf_label(string _tf) =>
+    string tf = _tf == "" ? timeframe.period : _tf
+    string result = tf
+    if tf == "1"
+        result := "1m"
+    else if tf == "3"
+        result := "3m"
+    else if tf == "5"
+        result := "5m"
+    else if tf == "15"
+        result := "15m"
+    else if tf == "30"
+        result := "30m"
+    else if tf == "45"
+        result := "45m"
+    else if tf == "60"
+        result := "1H"
+    else if tf == "120"
+        result := "2H"
+    else if tf == "180"
+        result := "3H"
+    else if tf == "240"
+        result := "4H"
+    else if tf == "D" or tf == "1D"
+        result := "1D"
+    else if tf == "W" or tf == "1W"
+        result := "1W"
+    else if tf == "M" or tf == "1M"
+        result := "1M"
+    result
+is_pivot_high_offset(int _offset) =>
+    bool result = true
+    if bar_index <= _offset + swing_length
+        result := false
+    else
+        for k = 1 to swing_length
+            result := result and high[_offset] > high[_offset + k] and high[_offset] >= high[_offset - k]
+    result
+
+is_pivot_low_offset(int _offset) =>
+    bool result = true
+    if bar_index <= _offset + swing_length
+        result := false
+    else
+        for k = 1 to swing_length
+            result := result and low[_offset] < low[_offset + k] and low[_offset] <= low[_offset - k]
+    result
+
+was_buy_side_taken_after(float _level, int _pivot_offset) =>
+    bool taken = false
+    if _pivot_offset > 1
+        for j = 1 to _pivot_offset - 1
+            taken := taken or high[j] > _level
+    taken
+
+was_sell_side_taken_after(float _level, int _pivot_offset) =>
+    bool taken = false
+    if _pivot_offset > 1
+        for j = 1 to _pivot_offset - 1
+            taken := taken or low[j] < _level
+    taken
+
+find_bearish_swing_turtle(float _tolerance, float _minimum_sweep) =>
+    bool found = false
+    float level = na
+    int level_time = na
+    float distance = na
+    int max_offset = math.min(lookback_bars, bar_index - swing_length)
+    if max_offset >= swing_length
+        for i = swing_length to max_offset
+            if not found and is_pivot_high_offset(i)
+                float candidate = high[i]
+                float sweep_distance = high - candidate
+                bool swept = signal_mode == "Aggressive" ? high >= candidate - _tolerance : signal_mode == "Balanced" ? high > candidate : high >= candidate + _minimum_sweep
+                bool failed_breakout = swept and close < candidate
+                if failed_breakout and not was_buy_side_taken_after(candidate, i)
+                    found := true
+                    level := candidate
+                    level_time := time[i]
+                    distance := sweep_distance
+    [found, level, level_time, distance]
+
+find_bullish_swing_turtle(float _tolerance, float _minimum_sweep) =>
+    bool found = false
+    float level = na
+    int level_time = na
+    float distance = na
+    int max_offset = math.min(lookback_bars, bar_index - swing_length)
+    if max_offset >= swing_length
+        for i = swing_length to max_offset
+            if not found and is_pivot_low_offset(i)
+                float candidate = low[i]
+                float sweep_distance = candidate - low
+                bool swept = signal_mode == "Aggressive" ? low <= candidate + _tolerance : signal_mode == "Balanced" ? low < candidate : low <= candidate - _minimum_sweep
+                bool failed_breakout = swept and close > candidate
+                if failed_breakout and not was_sell_side_taken_after(candidate, i)
+                    found := true
+                    level := candidate
+                    level_time := time[i]
+                    distance := sweep_distance
+    [found, level, level_time, distance]
+
+calc_swing_turtle() =>
+    float tolerance = ta.atr(atr_length) * sweep_tolerance_atr
+    float minimum_sweep = ta.atr(atr_length) * minimum_sweep_atr
+    [bearish_found, bearish_level, bearish_time, bearish_distance] = find_bearish_swing_turtle(tolerance, minimum_sweep)
+    [bullish_found, bullish_level, bullish_time, bullish_distance] = find_bullish_swing_turtle(tolerance, minimum_sweep)
+    [bullish_found, bearish_found, bullish_level, bearish_level, bullish_time, bearish_time, bullish_distance, bearish_distance, time]
+
+calc_structure_source() =>
+    float pivot_high = ta.pivothigh(high, swing_length, swing_length)
+    float pivot_low = ta.pivotlow(low, swing_length, swing_length)
+    float latest_high = ta.valuewhen(not na(pivot_high), pivot_high, 0)
+    float latest_low = ta.valuewhen(not na(pivot_low), pivot_low, 0)
+    int latest_high_time = ta.valuewhen(not na(pivot_high), time[swing_length], 0)
+    int latest_low_time = ta.valuewhen(not na(pivot_low), time[swing_length], 0)
+    [latest_high, latest_low, latest_high_time, latest_low_time, close]
+
+calc_htf_fvg() =>
+    float atr_value = ta.atr(atr_length)
+    bool bullish_fvg = low > high[2]
+    bool bearish_fvg = high < low[2]
+    float bullish_top = bullish_fvg ? low : na
+    float bullish_bottom = bullish_fvg ? high[2] : na
+    float bearish_top = bearish_fvg ? low[2] : na
+    float bearish_bottom = bearish_fvg ? high : na
+    int bullish_time = bullish_fvg ? time[1] : na
+    int bearish_time = bearish_fvg ? time[1] : na
+    float last_bullish_top = ta.valuewhen(bullish_fvg, bullish_top, 0)
+    float last_bullish_bottom = ta.valuewhen(bullish_fvg, bullish_bottom, 0)
+    int last_bullish_time = ta.valuewhen(bullish_fvg, bullish_time, 0)
+    float last_bearish_top = ta.valuewhen(bearish_fvg, bearish_top, 0)
+    float last_bearish_bottom = ta.valuewhen(bearish_fvg, bearish_bottom, 0)
+    int last_bearish_time = ta.valuewhen(bearish_fvg, bearish_time, 0)
+    float last_atr = ta.valuewhen(bullish_fvg or bearish_fvg, atr_value, 0)
+    [last_bullish_bottom, last_bullish_top, last_bullish_time, last_bearish_bottom, last_bearish_top, last_bearish_time, last_atr]
+
+calc_fvg_event_source() =>
+    float atr_value = ta.atr(atr_length)
+    bool bullish_fvg = low > high[2]
+    bool bearish_fvg = high < low[2]
+    float bullish_top = bullish_fvg ? low : na
+    float bullish_bottom = bullish_fvg ? high[2] : na
+    float bearish_top = bearish_fvg ? low[2] : na
+    float bearish_bottom = bearish_fvg ? high : na
+    int bullish_time = bullish_fvg ? time[1] : na
+    int bearish_time = bearish_fvg ? time[1] : na
+    [bullish_fvg, bearish_fvg, bullish_bottom, bullish_top, bullish_time, bearish_bottom, bearish_top, bearish_time, atr_value]
+calc_fvg_display_source() =>
+    float atr_value = ta.atr(atr_length)
+    bool bullish_fvg = low > high[2]
+    bool bearish_fvg = high < low[2]
+    float bullish_top = bullish_fvg ? low : na
+    float bullish_bottom = bullish_fvg ? high[2] : na
+    int bullish_time = bullish_fvg ? time[1] : na
+    float bearish_top = bearish_fvg ? low[2] : na
+    float bearish_bottom = bearish_fvg ? high : na
+    int bearish_time = bearish_fvg ? time[1] : na
+    [bullish_fvg, bearish_fvg, bullish_top, bullish_bottom, bullish_time, bearish_top, bearish_bottom, bearish_time, atr_value]
+calc_reaction_fvg_event_source() =>
+    float atr_value = ta.atr(atr_length)
+    bool bullish_fvg = low > high[2]
+    bool bearish_fvg = high < low[2]
+    float bullish_bottom = bullish_fvg ? high[2] : na
+    float bullish_top = bullish_fvg ? low : na
+    int bullish_time = bullish_fvg ? time[1] : na
+    int bullish_confirm_time = bullish_fvg ? time : na
+    float bearish_bottom = bearish_fvg ? high : na
+    float bearish_top = bearish_fvg ? low[2] : na
+    int bearish_time = bearish_fvg ? time[1] : na
+    int bearish_confirm_time = bearish_fvg ? time : na
+    [bullish_fvg, bearish_fvg, bullish_bottom, bullish_top, bullish_time, bullish_confirm_time, bearish_bottom, bearish_top, bearish_time, bearish_confirm_time, atr_value]
+
+calc_reaction_fvg_source() =>
+    float atr_value = ta.atr(atr_length)
+    bool bullish_fvg = low > high[2]
+    bool bearish_fvg = high < low[2]
+    float bullish_bottom = bullish_fvg ? high[2] : na
+    float bullish_top = bullish_fvg ? low : na
+    int bullish_time = bullish_fvg ? time[1] : na
+    int bullish_confirm_time = bullish_fvg ? time : na
+    float bearish_bottom = bearish_fvg ? high : na
+    float bearish_top = bearish_fvg ? low[2] : na
+    int bearish_time = bearish_fvg ? time[1] : na
+    int bearish_confirm_time = bearish_fvg ? time : na
+    float last_bullish_bottom = ta.valuewhen(bullish_fvg, bullish_bottom, 0)
+    float last_bullish_top = ta.valuewhen(bullish_fvg, bullish_top, 0)
+    int last_bullish_time = ta.valuewhen(bullish_fvg, bullish_time, 0)
+    int last_bullish_confirm_time = ta.valuewhen(bullish_fvg, bullish_confirm_time, 0)
+    float last_bearish_bottom = ta.valuewhen(bearish_fvg, bearish_bottom, 0)
+    float last_bearish_top = ta.valuewhen(bearish_fvg, bearish_top, 0)
+    int last_bearish_time = ta.valuewhen(bearish_fvg, bearish_time, 0)
+    int last_bearish_confirm_time = ta.valuewhen(bearish_fvg, bearish_confirm_time, 0)
+    float last_atr = ta.valuewhen(bullish_fvg or bearish_fvg, atr_value, 0)
+    [not na(last_bullish_time), not na(last_bearish_time), last_bullish_bottom, last_bullish_top, last_bullish_time, last_bullish_confirm_time, last_bearish_bottom, last_bearish_top, last_bearish_time, last_bearish_confirm_time, last_atr]
+[bullish_swing_chart, bearish_swing_chart, bullish_swing_level_chart, bearish_swing_level_chart, bullish_swing_time_chart, bearish_swing_time_chart, bullish_sweep_distance_chart, bearish_sweep_distance_chart, signal_time_chart] = calc_swing_turtle()
+[bullish_swing_tf, bearish_swing_tf, bullish_swing_level_tf, bearish_swing_level_tf, bullish_swing_time_tf, bearish_swing_time_tf, bullish_sweep_distance_tf, bearish_sweep_distance_tf, signal_time_tf] = request.security(syminfo.tickerid, request_timeframe, calc_swing_turtle(), barmerge.gaps_off, barmerge.lookahead_off)
+[structure_high_chart, structure_low_chart, structure_high_time_chart, structure_low_time_chart, structure_close_chart] = calc_structure_source()
+[structure_high_tf, structure_low_tf, structure_high_time_tf, structure_low_time_tf, structure_close_tf] = request.security(syminfo.tickerid, request_timeframe, calc_structure_source(), barmerge.gaps_off, barmerge.lookahead_off)
+
+bullish_swing_signal = use_swing_source and (use_chart_timeframe ? bullish_swing_chart : bullish_swing_tf)
+bearish_swing_signal = use_swing_source and (use_chart_timeframe ? bearish_swing_chart : bearish_swing_tf)
+bullish_swing_level = use_chart_timeframe ? bullish_swing_level_chart : bullish_swing_level_tf
+bearish_swing_level = use_chart_timeframe ? bearish_swing_level_chart : bearish_swing_level_tf
+bullish_swing_time = use_chart_timeframe ? bullish_swing_time_chart : bullish_swing_time_tf
+bearish_swing_time = use_chart_timeframe ? bearish_swing_time_chart : bearish_swing_time_tf
+signal_time = use_chart_timeframe ? signal_time_chart : signal_time_tf
+
+[htf_bull_bottom, htf_bull_top, htf_bull_time, htf_bear_bottom, htf_bear_top, htf_bear_time, htf_atr_value] = request.security(syminfo.tickerid, fvg_timeframe, calc_htf_fvg(), barmerge.gaps_off, barmerge.lookahead_off)
+[display_bull_fvg_chart, display_bear_fvg_chart, display_bull_top_chart, display_bull_bottom_chart, display_bull_time_chart, display_bear_top_chart, display_bear_bottom_chart, display_bear_time_chart, display_atr_chart] = calc_fvg_display_source()
+[display_bull_fvg_tf, display_bear_fvg_tf, display_bull_top_tf, display_bull_bottom_tf, display_bull_time_tf, display_bear_top_tf, display_bear_bottom_tf, display_bear_time_tf, display_atr_tf] = request.security(syminfo.tickerid, fvg_timeframe, calc_fvg_display_source(), barmerge.gaps_on, barmerge.lookahead_off)
+[reaction_bull_fvg_chart, reaction_bear_fvg_chart, reaction_bull_bottom_chart, reaction_bull_top_chart, reaction_bull_time_chart, reaction_bull_confirm_time_chart, reaction_bear_bottom_chart, reaction_bear_top_chart, reaction_bear_time_chart, reaction_bear_confirm_time_chart, reaction_atr_chart] = calc_reaction_fvg_event_source()
+[reaction_bull_fvg_tf, reaction_bear_fvg_tf, reaction_bull_bottom_tf, reaction_bull_top_tf, reaction_bull_time_tf, reaction_bull_confirm_time_tf, reaction_bear_bottom_tf, reaction_bear_top_tf, reaction_bear_time_tf, reaction_bear_confirm_time_tf, reaction_atr_tf] = request.security(syminfo.tickerid, reaction_fvg_timeframe, calc_reaction_fvg_source(), barmerge.gaps_on, barmerge.lookahead_off)
+
+int chart_tf_seconds = timeframe.in_seconds(timeframe.period)
+int fvg_tf_seconds = fvg_timeframe == "" ? chart_tf_seconds : timeframe.in_seconds(fvg_timeframe)
+int reaction_tf_seconds = reaction_fvg_timeframe == "" ? chart_tf_seconds : timeframe.in_seconds(reaction_fvg_timeframe)
+bool fvg_uses_chart_timeframe = fvg_timeframe == "" or fvg_tf_seconds == chart_tf_seconds
+bool reaction_uses_chart_timeframe = reaction_fvg_timeframe == "" or reaction_tf_seconds == chart_tf_seconds
+bool htf_bull_event = fvg_uses_chart_timeframe ? display_bull_fvg_chart : display_bull_fvg_tf
+bool htf_bear_event = fvg_uses_chart_timeframe ? display_bear_fvg_chart : display_bear_fvg_tf
+float htf_bull_event_top = fvg_uses_chart_timeframe ? display_bull_top_chart : display_bull_top_tf
+float htf_bull_event_bottom = fvg_uses_chart_timeframe ? display_bull_bottom_chart : display_bull_bottom_tf
+int htf_bull_event_time = fvg_uses_chart_timeframe ? display_bull_time_chart : display_bull_time_tf
+float htf_bear_event_top = fvg_uses_chart_timeframe ? display_bear_top_chart : display_bear_top_tf
+float htf_bear_event_bottom = fvg_uses_chart_timeframe ? display_bear_bottom_chart : display_bear_bottom_tf
+int htf_bear_event_time = fvg_uses_chart_timeframe ? display_bear_time_chart : display_bear_time_tf
+float htf_event_atr_value = fvg_uses_chart_timeframe ? display_atr_chart : display_atr_tf
+bool reaction_bull_fvg = reaction_uses_chart_timeframe ? reaction_bull_fvg_chart : reaction_bull_fvg_tf
+bool reaction_bear_fvg = reaction_uses_chart_timeframe ? reaction_bear_fvg_chart : reaction_bear_fvg_tf
+float reaction_bull_bottom = reaction_uses_chart_timeframe ? reaction_bull_bottom_chart : reaction_bull_bottom_tf
+float reaction_bull_top = reaction_uses_chart_timeframe ? reaction_bull_top_chart : reaction_bull_top_tf
+int reaction_bull_time = reaction_uses_chart_timeframe ? reaction_bull_time_chart : reaction_bull_time_tf
+int reaction_bull_confirm_time = reaction_uses_chart_timeframe ? reaction_bull_confirm_time_chart : reaction_bull_confirm_time_tf
+float reaction_bear_bottom = reaction_uses_chart_timeframe ? reaction_bear_bottom_chart : reaction_bear_bottom_tf
+float reaction_bear_top = reaction_uses_chart_timeframe ? reaction_bear_top_chart : reaction_bear_top_tf
+int reaction_bear_time = reaction_uses_chart_timeframe ? reaction_bear_time_chart : reaction_bear_time_tf
+int reaction_bear_confirm_time = reaction_uses_chart_timeframe ? reaction_bear_confirm_time_chart : reaction_bear_confirm_time_tf
+float reaction_atr_value = reaction_uses_chart_timeframe ? reaction_atr_chart : reaction_atr_tf
+int htf_bull_fvg_start_time = htf_bull_event_time
+int htf_bear_fvg_start_time = htf_bear_event_time
+var array<line> signal_lines = array.new<line>()
+var array<label> signal_markers = array.new<label>()
+var array<label> signal_labels = array.new<label>()
+var array<box> htf_fvg_boxes = array.new<box>()
+var array<float> htf_fvg_bottoms = array.new<float>()
+var array<float> htf_fvg_tops = array.new<float>()
+var array<int> htf_fvg_times = array.new<int>()
+var array<bool> htf_fvg_bullish = array.new<bool>()
+var array<bool> htf_fvg_active = array.new<bool>()
+var array<line> htf_fvg_midpoint_lines = array.new<line>()
+var array<label> htf_fvg_labels = array.new<label>()
+var int last_htf_bull_fvg_time = na
+var int last_htf_bear_fvg_time = na
+var array<box> reaction_boxes = array.new<box>()
+var array<float> reaction_box_bottoms = array.new<float>()
+var array<float> reaction_box_tops = array.new<float>()
+var array<bool> reaction_box_bullish = array.new<bool>()
+var array<bool> reaction_box_active = array.new<bool>()
+var array<line> reaction_midpoint_lines = array.new<line>()
+var array<label> reaction_labels = array.new<label>()
+var array<line> mss_lines = array.new<line>()
+var array<label> mss_labels = array.new<label>()
+var bool bullish_mss_pending = false
+var bool bearish_mss_pending = false
+var float bullish_mss_level = na
+var float bearish_mss_level = na
+var int bullish_mss_start_time = na
+var int bearish_mss_start_time = na
+var int bullish_pending_fvg = 0
+var int bearish_pending_fvg = 0
+var int bullish_pending_start_time = na
+var int bearish_pending_start_time = na
+var int last_bullish_reaction_fvg_time = na
+var int last_bearish_reaction_fvg_time = na
+var int last_signal_bar = na
+var int last_bullish_setup_time = na
+var int last_bearish_setup_time = na
+var int bullish_setup_bar = na
+var int bearish_setup_bar = na
+var bool bullish_mss_confirmed = false
+var bool bearish_mss_confirmed = false
+var bool bullish_entry_fvg_active = false
+var bool bearish_entry_fvg_active = false
+var float bullish_entry_fvg_top = na
+var float bullish_entry_fvg_bottom = na
+var float bearish_entry_fvg_top = na
+var float bearish_entry_fvg_bottom = na
+var int bullish_entry_fvg_time = na
+var int bearish_entry_fvg_time = na
+var int bullish_entry_fvg_bar = na
+var int bearish_entry_fvg_bar = na
+var int bullish_entry_level_time = na
+var int bearish_entry_level_time = na
+
+safe_delete_line(line _line) =>
+    if not na(_line)
+        line.delete(_line)
+
+safe_delete_label(label _label) =>
+    if not na(_label)
+        label.delete(_label)
+
+safe_delete_box(box _box) =>
+    if not na(_box)
+        box.delete(_box)
+
+clear_signals() =>
+    while array.size(signal_lines) > 0
+        safe_delete_line(array.shift(signal_lines))
+    while array.size(signal_markers) > 0
+        safe_delete_label(array.shift(signal_markers))
+    while array.size(signal_labels) > 0
+        safe_delete_label(array.shift(signal_labels))
+
+trim_signals() =>
+    while array.size(signal_lines) > maximum_signals
+        safe_delete_line(array.shift(signal_lines))
+    while array.size(signal_markers) > maximum_signals
+        safe_delete_label(array.shift(signal_markers))
+    while array.size(signal_labels) > maximum_signals
+        safe_delete_label(array.shift(signal_labels))
+
+trim_htf_fvg() =>
+    while array.size(htf_fvg_boxes) > maximum_htf_fvg
+        safe_delete_box(array.shift(htf_fvg_boxes))
+        safe_delete_line(array.shift(htf_fvg_midpoint_lines))
+        safe_delete_label(array.shift(htf_fvg_labels))
+        array.shift(htf_fvg_bottoms)
+        array.shift(htf_fvg_tops)
+        array.shift(htf_fvg_times)
+        array.shift(htf_fvg_bullish)
+        array.shift(htf_fvg_active)
+
+trim_reaction_fvg() =>
+    while array.size(reaction_boxes) > maximum_reaction_fvg
+        safe_delete_box(array.shift(reaction_boxes))
+        safe_delete_line(array.shift(reaction_midpoint_lines))
+        safe_delete_label(array.shift(reaction_labels))
+        array.shift(reaction_box_bottoms)
+        array.shift(reaction_box_tops)
+        array.shift(reaction_box_bullish)
+        array.shift(reaction_box_active)
+
+trim_mss() =>
+    while array.size(mss_lines) > maximum_mss
+        safe_delete_line(array.shift(mss_lines))
+    while array.size(mss_labels) > maximum_mss
+        safe_delete_label(array.shift(mss_labels))
+
+sync_htf_fvg() =>
+    if array.size(htf_fvg_boxes) > 0
+        for i = 0 to array.size(htf_fvg_boxes) - 1
+            box htf_box = array.get(htf_fvg_boxes, i)
+            line midpoint_line = array.get(htf_fvg_midpoint_lines, i)
+            label fvg_label = array.get(htf_fvg_labels, i)
+            bool active = array.get(htf_fvg_active, i)
+            if active and not na(htf_box)
+                float bottom = array.get(htf_fvg_bottoms, i)
+                float top = array.get(htf_fvg_tops, i)
+                bool bullish = array.get(htf_fvg_bullish, i)
+                float midpoint = (top + bottom) / 2.0
+                bool mitigated = bullish ? low <= midpoint : high >= midpoint
+                int right_time = mitigated ? time : time_close
+                color active_color = bullish ? bullish_htf_fvg_color : bearish_htf_fvg_color
+                bool visible = show_htf_fvg and (not mitigated or keep_mitigated_htf_fvg)
+                color box_color = visible ? (mitigated ? mitigated_htf_fvg_color : active_color) : color.new(active_color, 100)
+                color midpoint_visible_color = visible and show_fvg_midpoint ? fvg_midpoint_color : color.new(fvg_midpoint_color, 100)
+                color label_visible_color = color.new(color.black, 100)
+                color label_text_color = visible and show_fvg_labels ? color.new(color.white, 50) : color.new(color.white, 100)
+                box.set_bgcolor(htf_box, box_color)
+                box.set_right(htf_box, right_time)
+                line.set_x2(midpoint_line, right_time)
+                line.set_color(midpoint_line, midpoint_visible_color)
+                label.set_x(fvg_label, right_time)
+                label.set_y(fvg_label, midpoint)
+                label.set_color(fvg_label, label_visible_color)
+                label.set_textcolor(fvg_label, label_text_color)
+                if mitigated
+                    array.set(htf_fvg_active, i, false)
+
+add_htf_fvg(int _start_time, float _bottom, float _top, bool _bullish) =>
+    color fvg_color = show_htf_fvg ? (_bullish ? bullish_htf_fvg_color : bearish_htf_fvg_color) : color.new(color.gray, 100)
+    float midpoint = (_top + _bottom) / 2.0
+    string label_text = format_tf_label(fvg_timeframe) + " FVG"
+    box htf_box = box.new(_start_time, _top, time_close, _bottom, xloc=xloc.bar_time, border_color=color.new(fvg_color, 100), bgcolor=fvg_color)
+    line midpoint_line = line.new(_start_time, midpoint, time_close, midpoint, xloc=xloc.bar_time, extend=extend.none, color=show_fvg_midpoint ? fvg_midpoint_color : color.new(fvg_midpoint_color, 100), width=1, style=line.style_dashed)
+    label fvg_label = label.new(time_close, midpoint, label_text, xloc=xloc.bar_time, style=label.style_label_left, color=color.new(color.black, 100), textcolor=show_fvg_labels ? color.new(color.white, 50) : color.new(color.white, 100), size=size.small)
+    array.push(htf_fvg_boxes, htf_box)
+    array.push(htf_fvg_midpoint_lines, midpoint_line)
+    array.push(htf_fvg_labels, fvg_label)
+    array.push(htf_fvg_bottoms, _bottom)
+    array.push(htf_fvg_tops, _top)
+    array.push(htf_fvg_times, _start_time)
+    array.push(htf_fvg_bullish, _bullish)
+    array.push(htf_fvg_active, true)
+    trim_htf_fvg()
+
+is_active_htf_fvg(int _start_time, bool _bullish) =>
+    bool active = false
+    if array.size(htf_fvg_boxes) > 0
+        for i = 0 to array.size(htf_fvg_boxes) - 1
+            active := active or (array.get(htf_fvg_times, i) == _start_time and array.get(htf_fvg_bullish, i) == _bullish and array.get(htf_fvg_active, i))
+    active
+
+add_signal(int _start_time, float _level, bool _bullish, bool _from_fvg) =>
+    if not keep_signals
+        clear_signals()
+    color signal_color = _bullish ? bullish_signal_color : bearish_signal_color
+    string label_text = _bullish ? "Bullish Turtle Soup" : "Bearish Turtle Soup"
+    line signal_line = show_sweep_lines and not na(_start_time) and not na(_level) ? line.new(_start_time, _level, time, _level, xloc=xloc.bar_time, extend=extend.none, color=signal_color, width=2, style=line.style_solid) : na
+    label signal_marker = show_signal_markers and not na(_level) ? label.new(time, _level, "", xloc=xloc.bar_time, style=_bullish ? label.style_triangleup : label.style_triangledown, color=signal_color, textcolor=signal_color, size=size.tiny) : na
+    float signal_label_offset = ta.atr(atr_length) * signal_label_offset_atr
+    float signal_label_y = _bullish ? _level - signal_label_offset : _level + signal_label_offset
+    label signal_label = show_signal_labels and not na(_level) ? label.new(time, signal_label_y, label_text, xloc=xloc.bar_time, style=_bullish ? label.style_label_up : label.style_label_down, color=color.new(signal_color, 100), textcolor=signal_color, size=size.small) : na
+    array.push(signal_lines, signal_line)
+    array.push(signal_markers, signal_marker)
+    array.push(signal_labels, signal_label)
+    trim_signals()
+
+sync_reaction_fvg() =>
+    if array.size(reaction_boxes) > 0
+        for i = 0 to array.size(reaction_boxes) - 1
+            box reaction_box = array.get(reaction_boxes, i)
+            line midpoint_line = array.get(reaction_midpoint_lines, i)
+            label reaction_label = array.get(reaction_labels, i)
+            bool active = array.get(reaction_box_active, i)
+            if active and not na(reaction_box)
+                float bottom = array.get(reaction_box_bottoms, i)
+                float top = array.get(reaction_box_tops, i)
+                bool bullish = array.get(reaction_box_bullish, i)
+                float midpoint = (top + bottom) / 2.0
+                bool mitigated = bullish ? low <= midpoint : high >= midpoint
+                int right_time = mitigated ? time : time_close
+                bool visible = show_reaction_fvg
+                box.set_right(reaction_box, right_time)
+                line.set_x2(midpoint_line, right_time)
+                line.set_color(midpoint_line, visible and show_fvg_midpoint ? fvg_midpoint_color : color.new(fvg_midpoint_color, 100))
+                label.set_x(reaction_label, right_time)
+                label.set_y(reaction_label, midpoint)
+                label.set_color(reaction_label, color.new(color.black, 100))
+                label.set_textcolor(reaction_label, visible and show_fvg_labels ? color.new(color.white, 50) : color.new(color.white, 100))
+                if mitigated
+                    array.set(reaction_box_active, i, false)
+
+add_reaction_fvg(int _start_time, float _bottom, float _top, bool _bullish) =>
+    color fvg_color = _bullish ? bullish_reaction_fvg_color : bearish_reaction_fvg_color
+    float midpoint = (_top + _bottom) / 2.0
+    string label_text = format_tf_label(reaction_fvg_timeframe) + " FVG"
+    box reaction_box = box.new(_start_time, _top, time_close, _bottom, xloc=xloc.bar_time, border_color=color.new(fvg_color, 100), bgcolor=fvg_color)
+    line midpoint_line = line.new(_start_time, midpoint, time_close, midpoint, xloc=xloc.bar_time, extend=extend.none, color=show_fvg_midpoint ? fvg_midpoint_color : color.new(fvg_midpoint_color, 100), width=1, style=line.style_dashed)
+    label reaction_label = label.new(time_close, midpoint, label_text, xloc=xloc.bar_time, style=label.style_label_left, color=color.new(color.black, 100), textcolor=show_fvg_labels ? color.new(color.white, 50) : color.new(color.white, 100), size=size.small)
+    array.push(reaction_boxes, reaction_box)
+    array.push(reaction_midpoint_lines, midpoint_line)
+    array.push(reaction_labels, reaction_label)
+    array.push(reaction_box_bottoms, _bottom)
+    array.push(reaction_box_tops, _top)
+    array.push(reaction_box_bullish, _bullish)
+    array.push(reaction_box_active, true)
+    trim_reaction_fvg()
+
+add_mss(int _start_time, float _level, bool _bullish) =>
+    color mss_color = _bullish ? mss_bullish_color : mss_bearish_color
+    string label_text = _bullish ? "Bullish MSS" : "Bearish MSS"
+    line mss_line = show_mss and not na(_start_time) and not na(_level) ? line.new(_start_time, _level, time, _level, xloc=xloc.bar_time, extend=extend.none, color=mss_color, width=2, style=line.style_solid) : na
+    float mss_label_offset = ta.atr(atr_length) * mss_label_offset_atr
+    float mss_label_y = _bullish ? _level + mss_label_offset : _level - mss_label_offset
+    label mss_label = show_mss and not na(_level) ? label.new(time, mss_label_y, label_text, xloc=xloc.bar_time, style=_bullish ? label.style_label_up : label.style_label_down, color=color.new(mss_color, 100), textcolor=mss_color, size=size.small) : na
+    array.push(mss_lines, mss_line)
+    array.push(mss_labels, mss_label)
+    trim_mss()
+float fvg_tolerance = ta.atr(atr_length) * sweep_tolerance_atr
+float htf_bull_gap_size = htf_bull_event_top - htf_bull_event_bottom
+float htf_bear_gap_size = htf_bear_event_top - htf_bear_event_bottom
+float htf_minimum_gap_size = htf_event_atr_value * minimum_fvg_atr
+bool new_htf_bull_fvg = show_htf_fvg and htf_bull_event and not na(htf_bull_fvg_start_time) and not na(htf_bull_event_bottom) and not na(htf_bull_event_top) and htf_bull_gap_size >= htf_minimum_gap_size
+bool new_htf_bear_fvg = show_htf_fvg and htf_bear_event and not na(htf_bear_fvg_start_time) and not na(htf_bear_event_bottom) and not na(htf_bear_event_top) and htf_bear_gap_size >= htf_minimum_gap_size
+
+if new_htf_bull_fvg
+    add_htf_fvg(htf_bull_fvg_start_time, htf_bull_event_bottom, htf_bull_event_top, true)
+
+if new_htf_bear_fvg
+    add_htf_fvg(htf_bear_fvg_start_time, htf_bear_event_bottom, htf_bear_event_top, false)
+
+sync_htf_fvg()
+
+bool bullish_htf_fvg_active = use_htf_fvg_source and not na(htf_bull_time) and is_active_htf_fvg(htf_bull_time, true)
+bool bearish_htf_fvg_active = use_htf_fvg_source and not na(htf_bear_time) and is_active_htf_fvg(htf_bear_time, false)
+float htf_bull_midpoint = (htf_bull_bottom + htf_bull_top) / 2.0
+float htf_bear_midpoint = (htf_bear_bottom + htf_bear_top) / 2.0
+float minimum_sweep_size = ta.atr(atr_length) * minimum_sweep_atr
+bool bullish_fvg_reaction_aggressive = bullish_htf_fvg_active and low <= htf_bull_top + fvg_tolerance and high >= htf_bull_bottom - fvg_tolerance and close > htf_bull_top
+bool bearish_fvg_reaction_aggressive = bearish_htf_fvg_active and high >= htf_bear_bottom - fvg_tolerance and low <= htf_bear_top + fvg_tolerance and close < htf_bear_bottom
+bool bullish_fvg_reaction_balanced = bullish_htf_fvg_active and low <= htf_bull_midpoint and close > htf_bull_top
+bool bearish_fvg_reaction_balanced = bearish_htf_fvg_active and high >= htf_bear_midpoint and close < htf_bear_bottom
+bool bullish_fvg_reaction_conservative = bullish_htf_fvg_active and low <= htf_bull_midpoint and close > htf_bull_top + minimum_sweep_size
+bool bearish_fvg_reaction_conservative = bearish_htf_fvg_active and high >= htf_bear_midpoint and close < htf_bear_bottom - minimum_sweep_size
+bool bullish_fvg_reaction = signal_mode == "Aggressive" ? bullish_fvg_reaction_aggressive : signal_mode == "Balanced" ? bullish_fvg_reaction_balanced : bullish_fvg_reaction_conservative
+bool bearish_fvg_reaction = signal_mode == "Aggressive" ? bearish_fvg_reaction_aggressive : signal_mode == "Balanced" ? bearish_fvg_reaction_balanced : bearish_fvg_reaction_conservative
+
+float latest_structure_high = use_chart_timeframe ? structure_high_chart : structure_high_tf
+float latest_structure_low = use_chart_timeframe ? structure_low_chart : structure_low_tf
+int latest_structure_high_time = use_chart_timeframe ? structure_high_time_chart : structure_high_time_tf
+int latest_structure_low_time = use_chart_timeframe ? structure_low_time_chart : structure_low_time_tf
+float structure_close_value = use_chart_timeframe ? structure_close_chart : structure_close_tf
+
+bool signal_cooldown_ready = signal_cooldown_bars == 0 or na(last_signal_bar) or bar_index - last_signal_bar >= signal_cooldown_bars
+bool bullish_sweep_candidate = bullish_swing_signal and (na(last_bullish_setup_time) or bullish_swing_time != last_bullish_setup_time)
+bool bearish_sweep_candidate = bearish_swing_signal and (na(last_bearish_setup_time) or bearish_swing_time != last_bearish_setup_time)
+float bullish_sweep_distance = use_chart_timeframe ? bullish_sweep_distance_chart : bullish_sweep_distance_tf
+float bearish_sweep_distance = use_chart_timeframe ? bearish_sweep_distance_chart : bearish_sweep_distance_tf
+bool both_sweeps = bullish_sweep_candidate and bearish_sweep_candidate
+bool prefer_bullish_sweep = both_sweeps ? nz(bullish_sweep_distance, 0.0) > nz(bearish_sweep_distance, 0.0) : bullish_sweep_candidate
+bool prefer_bearish_sweep = both_sweeps ? nz(bearish_sweep_distance, 0.0) >= nz(bullish_sweep_distance, 0.0) : bearish_sweep_candidate
+bool bullish_sweep_setup = bullish_sweep_candidate and not bearish_sweep_candidate or both_sweeps and prefer_bullish_sweep
+bool bearish_sweep_setup = bearish_sweep_candidate and not bullish_sweep_candidate or both_sweeps and prefer_bearish_sweep
+
+if bullish_sweep_setup
+    bearish_mss_pending := false
+    bearish_mss_confirmed := false
+    bearish_pending_fvg := 0
+    bearish_entry_fvg_active := false
+    last_bullish_setup_time := bullish_swing_time
+    bullish_setup_bar := bar_index
+    bullish_mss_pending := not na(latest_structure_high) and not na(structure_close_value) and latest_structure_high > structure_close_value
+    bullish_mss_confirmed := false
+    bullish_mss_level := latest_structure_high
+    bullish_mss_start_time := latest_structure_high_time
+    bullish_pending_fvg := 0
+    bullish_pending_start_time := na
+    bullish_entry_fvg_active := false
+
+if bearish_sweep_setup
+    bullish_mss_pending := false
+    bullish_mss_confirmed := false
+    bullish_pending_fvg := 0
+    bullish_entry_fvg_active := false
+    last_bearish_setup_time := bearish_swing_time
+    bearish_setup_bar := bar_index
+    bearish_mss_pending := not na(latest_structure_low) and not na(structure_close_value) and latest_structure_low < structure_close_value
+    bearish_mss_confirmed := false
+    bearish_mss_level := latest_structure_low
+    bearish_mss_start_time := latest_structure_low_time
+    bearish_pending_fvg := 0
+    bearish_pending_start_time := na
+    bearish_entry_fvg_active := false
+
+bool bullish_mss = bullish_mss_pending and not na(bullish_setup_bar) and bar_index > bullish_setup_bar and not na(bullish_mss_level) and not na(structure_close_value) and structure_close_value > bullish_mss_level
+bool bearish_mss = bearish_mss_pending and not na(bearish_setup_bar) and bar_index > bearish_setup_bar and not na(bearish_mss_level) and not na(structure_close_value) and structure_close_value < bearish_mss_level
+
+if bullish_mss
+    add_mss(bullish_mss_start_time, bullish_mss_level, true)
+    bullish_mss_pending := false
+    bullish_mss_confirmed := true
+    bullish_pending_fvg := reaction_fvg_window
+    bullish_pending_start_time := time
+    bullish_entry_level_time := bullish_mss_start_time
+
+if bearish_mss
+    add_mss(bearish_mss_start_time, bearish_mss_level, false)
+    bearish_mss_pending := false
+    bearish_mss_confirmed := true
+    bearish_pending_fvg := reaction_fvg_window
+    bearish_pending_start_time := time
+    bearish_entry_level_time := bearish_mss_start_time
+
+sync_reaction_fvg()
+
+float reaction_bull_gap_size = reaction_bull_top - reaction_bull_bottom
+float reaction_bear_gap_size = reaction_bear_top - reaction_bear_bottom
+float reaction_minimum_gap_size = reaction_atr_value * minimum_fvg_atr
+bool new_bullish_reaction_fvg = show_reaction_fvg and bullish_mss_confirmed and bullish_pending_fvg > 0 and reaction_bull_fvg and reaction_bull_gap_size >= reaction_minimum_gap_size and not na(reaction_bull_time) and not na(reaction_bull_confirm_time) and not na(bullish_pending_start_time) and reaction_bull_confirm_time >= bullish_pending_start_time and (na(last_bullish_reaction_fvg_time) or reaction_bull_confirm_time != last_bullish_reaction_fvg_time)
+bool new_bearish_reaction_fvg = show_reaction_fvg and bearish_mss_confirmed and bearish_pending_fvg > 0 and reaction_bear_fvg and reaction_bear_gap_size >= reaction_minimum_gap_size and not na(reaction_bear_time) and not na(reaction_bear_confirm_time) and not na(bearish_pending_start_time) and reaction_bear_confirm_time >= bearish_pending_start_time and (na(last_bearish_reaction_fvg_time) or reaction_bear_confirm_time != last_bearish_reaction_fvg_time)
+
+if new_bullish_reaction_fvg
+    add_reaction_fvg(reaction_bull_time, reaction_bull_bottom, reaction_bull_top, true)
+    last_bullish_reaction_fvg_time := reaction_bull_confirm_time
+    bullish_pending_fvg := 0
+    bullish_entry_fvg_active := true
+    bullish_entry_fvg_bottom := reaction_bull_bottom
+    bullish_entry_fvg_top := reaction_bull_top
+    bullish_entry_fvg_time := reaction_bull_confirm_time
+    bullish_entry_fvg_bar := bar_index
+else if bullish_pending_fvg > 0
+    bullish_pending_fvg -= 1
+
+if new_bearish_reaction_fvg
+    add_reaction_fvg(reaction_bear_time, reaction_bear_bottom, reaction_bear_top, false)
+    last_bearish_reaction_fvg_time := reaction_bear_confirm_time
+    bearish_pending_fvg := 0
+    bearish_entry_fvg_active := true
+    bearish_entry_fvg_bottom := reaction_bear_bottom
+    bearish_entry_fvg_top := reaction_bear_top
+    bearish_entry_fvg_time := reaction_bear_confirm_time
+    bearish_entry_fvg_bar := bar_index
+else if bearish_pending_fvg > 0
+    bearish_pending_fvg -= 1
+
+bool bullish_entry_window_open = bullish_entry_fvg_active and not na(bullish_entry_fvg_bar) and bar_index - bullish_entry_fvg_bar <= reaction_fvg_window
+bool bearish_entry_window_open = bearish_entry_fvg_active and not na(bearish_entry_fvg_bar) and bar_index - bearish_entry_fvg_bar <= reaction_fvg_window
+if bullish_entry_fvg_active and not bullish_entry_window_open
+    bullish_entry_fvg_active := false
+if bearish_entry_fvg_active and not bearish_entry_window_open
+    bearish_entry_fvg_active := false
+
+bool bullish_fvg_entry = bullish_entry_window_open and time > bullish_entry_fvg_time and low <= bullish_entry_fvg_top and high >= bullish_entry_fvg_bottom
+bool bearish_fvg_entry = bearish_entry_window_open and time > bearish_entry_fvg_time and high >= bearish_entry_fvg_bottom and low <= bearish_entry_fvg_top
+
+bool raw_bullish_signal = signal_confirmation == "Sweep Only" ? (bullish_sweep_setup or bullish_fvg_reaction) and signal_cooldown_ready : signal_confirmation == "Sweep + MSS" ? bullish_mss and signal_cooldown_ready : bullish_fvg_entry and signal_cooldown_ready
+bool raw_bearish_signal = signal_confirmation == "Sweep Only" ? (bearish_sweep_setup or bearish_fvg_reaction) and signal_cooldown_ready : signal_confirmation == "Sweep + MSS" ? bearish_mss and signal_cooldown_ready : bearish_fvg_entry and signal_cooldown_ready
+bool both_final_signals = raw_bullish_signal and raw_bearish_signal
+bool prefer_bullish_signal = both_final_signals ? close > open : raw_bullish_signal
+bool prefer_bearish_signal = both_final_signals ? close <= open : raw_bearish_signal
+bullish_signal = raw_bullish_signal and (not both_final_signals or prefer_bullish_signal)
+bearish_signal = raw_bearish_signal and (not both_final_signals or prefer_bearish_signal)
+bullish_level = signal_confirmation == "Sweep + MSS + FVG Entry" ? (bullish_entry_fvg_bottom + bullish_entry_fvg_top) / 2.0 : bullish_swing_signal ? bullish_swing_level : (htf_bull_bottom + htf_bull_top) / 2.0
+bearish_level = signal_confirmation == "Sweep + MSS + FVG Entry" ? (bearish_entry_fvg_bottom + bearish_entry_fvg_top) / 2.0 : bearish_swing_signal ? bearish_swing_level : (htf_bear_bottom + htf_bear_top) / 2.0
+bullish_level_time = signal_confirmation == "Sweep + MSS + FVG Entry" ? bullish_entry_level_time : bullish_swing_signal ? bullish_swing_time : htf_bull_time
+bearish_level_time = signal_confirmation == "Sweep + MSS + FVG Entry" ? bearish_entry_level_time : bearish_swing_signal ? bearish_swing_time : htf_bear_time
+
+if bullish_signal
+    add_signal(bullish_level_time, bullish_level, true, false)
+    last_signal_bar := bar_index
+    bullish_entry_fvg_active := false
+
+if bearish_signal
+    add_signal(bearish_level_time, bearish_level, false, false)
+    last_signal_bar := bar_index
+    bearish_entry_fvg_active := false
+
+sync_reaction_fvg()
+alertcondition(bullish_signal, title="Turtle Soup Signals [Aventra] Bullish Signal", message="Turtle Soup Signals [Aventra]: bullish false breakout detected.")
+alertcondition(bearish_signal, title="Turtle Soup Signals [Aventra] Bearish Signal", message="Turtle Soup Signals [Aventra]: bearish false breakout detected.")
+alertcondition(new_bullish_reaction_fvg, title="Turtle Soup Signals [Aventra] Bullish Reaction FVG", message="Turtle Soup Signals [Aventra]: bullish reaction FVG detected after signal.")
+alertcondition(new_bearish_reaction_fvg, title="Turtle Soup Signals [Aventra] Bearish Reaction FVG", message="Turtle Soup Signals [Aventra]: bearish reaction FVG detected after signal.")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

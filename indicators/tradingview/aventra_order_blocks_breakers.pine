@@ -1,0 +1,270 @@
+//@version=6
+// Aventra Version: 1.0.3
+indicator("Order Blocks & Breakers [Aventra]", shorttitle="Order Blocks & Breakers [Aventra]", overlay=true, max_boxes_count=500, max_lines_count=500, max_labels_count=500)
+
+calculation_timeframe = input.timeframe("", "Calculation Timeframe")
+swing_length = input.int(5, "Swing Length", minval=2)
+order_block_lookback = input.int(20, "Order Block Lookback", minval=1, maxval=100)
+show_order_blocks = input.bool(true, "Show Order Blocks")
+show_breaker_blocks = input.bool(false, "Show Breaker Blocks")
+maximum_order_blocks = input.int(50, "Maximum Order Blocks", minval=0, maxval=200)
+maximum_breaker_blocks = input.int(50, "Maximum Breaker Blocks", minval=0, maxval=200)
+show_labels = input.bool(false, "Show Labels")
+show_equilibrium = input.bool(true, "Show Equilibrium")
+keep_mitigated_blocks = input.bool(false, "Keep Mitigated Blocks")
+show_mitigation_labels = input.bool(false, "Show Mitigation Labels")
+bullish_order_block_color = input.color(color.new(color.lime, 92), "Bullish Order Block Color")
+bearish_order_block_color = input.color(color.new(color.red, 92), "Bearish Order Block Color")
+bullish_breaker_color = input.color(color.new(color.teal, 92), "Bullish Breaker Color")
+bearish_breaker_color = input.color(color.new(color.orange, 92), "Bearish Breaker Color")
+mitigated_block_color = input.color(color.new(color.gray, 92), "Mitigated Block Color")
+equilibrium_color = input.color(color.new(color.white, 80), "Equilibrium Color")
+order_block_label_color = input.color(color.new(color.rgb(255, 152, 0), 60), "Order Block Label Color")
+mitigation_label_color = input.color(color.new(color.rgb(66, 66, 66), 60), "Mitigation Label Color")
+
+int BLOCK_TYPE_ORDER = 0
+int BLOCK_TYPE_BREAKER = 1
+
+use_chart_timeframe = calculation_timeframe == ""
+request_timeframe = use_chart_timeframe ? timeframe.period : calculation_timeframe
+
+calc_order_block_source() =>
+    float pivot_high = ta.pivothigh(high, swing_length, swing_length)
+    float pivot_low = ta.pivotlow(low, swing_length, swing_length)
+    float last_swing_high = ta.valuewhen(not na(pivot_high), pivot_high, 0)
+    float last_swing_low = ta.valuewhen(not na(pivot_low), pivot_low, 0)
+    bool bullish_break = not na(last_swing_high) and close > last_swing_high and close[1] <= last_swing_high
+    bool bearish_break = not na(last_swing_low) and close < last_swing_low and close[1] >= last_swing_low
+    float bullish_top = na
+    float bullish_bottom = na
+    int bullish_start = na
+    float bearish_top = na
+    float bearish_bottom = na
+    int bearish_start = na
+    if bullish_break
+        for i = 1 to order_block_lookback
+            if na(bullish_top) and close[i] < open[i]
+                bullish_top := high[i]
+                bullish_bottom := low[i]
+                bullish_start := time[i]
+    if bearish_break
+        for i = 1 to order_block_lookback
+            if na(bearish_top) and close[i] > open[i]
+                bearish_top := high[i]
+                bearish_bottom := low[i]
+                bearish_start := time[i]
+    [bullish_break and not na(bullish_top), bearish_break and not na(bearish_top), bullish_top, bullish_bottom, bullish_start, bearish_top, bearish_bottom, bearish_start]
+
+[bullish_ob_chart, bearish_ob_chart, bullish_top_chart, bullish_bottom_chart, bullish_start_chart, bearish_top_chart, bearish_bottom_chart, bearish_start_chart] = calc_order_block_source()
+[bullish_ob_tf, bearish_ob_tf, bullish_top_tf, bullish_bottom_tf, bullish_start_tf, bearish_top_tf, bearish_bottom_tf, bearish_start_tf] = request.security(syminfo.tickerid, request_timeframe, calc_order_block_source(), barmerge.gaps_on, barmerge.lookahead_off)
+
+new_bullish_order_block = show_order_blocks and (use_chart_timeframe ? bullish_ob_chart : bullish_ob_tf)
+new_bearish_order_block = show_order_blocks and (use_chart_timeframe ? bearish_ob_chart : bearish_ob_tf)
+bullish_top = use_chart_timeframe ? bullish_top_chart : bullish_top_tf
+bullish_bottom = use_chart_timeframe ? bullish_bottom_chart : bullish_bottom_tf
+bullish_start_time = use_chart_timeframe ? bullish_start_chart : bullish_start_tf
+bearish_top = use_chart_timeframe ? bearish_top_chart : bearish_top_tf
+bearish_bottom = use_chart_timeframe ? bearish_bottom_chart : bearish_bottom_tf
+bearish_start_time = use_chart_timeframe ? bearish_start_chart : bearish_start_tf
+
+var array<box> bullish_boxes = array.new<box>()
+var array<line> bullish_equilibriums = array.new<line>()
+var array<float> bullish_tops = array.new<float>()
+var array<float> bullish_bottoms = array.new<float>()
+var array<bool> bullish_active = array.new<bool>()
+var array<bool> bullish_breaker = array.new<bool>()
+var array<label> bullish_labels = array.new<label>()
+var array<int> bullish_types = array.new<int>()
+
+var array<box> bearish_boxes = array.new<box>()
+var array<line> bearish_equilibriums = array.new<line>()
+var array<float> bearish_tops = array.new<float>()
+var array<float> bearish_bottoms = array.new<float>()
+var array<bool> bearish_active = array.new<bool>()
+var array<bool> bearish_breaker = array.new<bool>()
+var array<label> bearish_labels = array.new<label>()
+var array<int> bearish_types = array.new<int>()
+
+safe_delete_label(label _label) =>
+    if not na(_label)
+        label.delete(_label)
+
+safe_delete_line(line _line) =>
+    if not na(_line)
+        line.delete(_line)
+
+delete_block_at(array<box> _boxes, array<line> _equilibriums, array<float> _tops, array<float> _bottoms, array<bool> _active, array<bool> _breaker, array<label> _labels, array<int> _types, int _index) =>
+    box.delete(array.get(_boxes, _index))
+    safe_delete_line(array.get(_equilibriums, _index))
+    safe_delete_label(array.get(_labels, _index))
+    array.remove(_boxes, _index)
+    array.remove(_equilibriums, _index)
+    array.remove(_tops, _index)
+    array.remove(_bottoms, _index)
+    array.remove(_active, _index)
+    array.remove(_breaker, _index)
+    array.remove(_labels, _index)
+    array.remove(_types, _index)
+
+count_block_type(array<int> _types, int _type) =>
+    int count = 0
+    if array.size(_types) > 0
+        for i = 0 to array.size(_types) - 1
+            if array.get(_types, i) == _type
+                count += 1
+    count
+
+trim_block_type(array<box> _boxes, array<line> _equilibriums, array<float> _tops, array<float> _bottoms, array<bool> _active, array<bool> _breaker, array<label> _labels, array<int> _types, int _type, int _maximum) =>
+    while count_block_type(_types, _type) > _maximum
+        int delete_index = na
+        for i = 0 to array.size(_types) - 1
+            if array.get(_types, i) == _type and na(delete_index)
+                delete_index := i
+        if na(delete_index)
+            break
+        delete_block_at(_boxes, _equilibriums, _tops, _bottoms, _active, _breaker, _labels, _types, delete_index)
+
+trim_all_block_types(array<box> _boxes, array<line> _equilibriums, array<float> _tops, array<float> _bottoms, array<bool> _active, array<bool> _breaker, array<label> _labels, array<int> _types) =>
+    trim_block_type(_boxes, _equilibriums, _tops, _bottoms, _active, _breaker, _labels, _types, BLOCK_TYPE_ORDER, maximum_order_blocks)
+    trim_block_type(_boxes, _equilibriums, _tops, _bottoms, _active, _breaker, _labels, _types, BLOCK_TYPE_BREAKER, maximum_breaker_blocks)
+
+set_block_visibility(box _box, line _equilibrium, label _label, color _box_color, color _line_color, bool _visible) =>
+    box.set_bgcolor(_box, _visible ? _box_color : color.new(_box_color, 100))
+    box.set_border_color(_box, color.new(_box_color, 100))
+    if not na(_equilibrium)
+        line.set_color(_equilibrium, _visible and show_equilibrium ? _line_color : color.new(_line_color, 100))
+    if not na(_label)
+        label.set_textcolor(_label, _visible and show_labels ? color.white : color.new(color.white, 100))
+        label.set_color(_label, _visible and show_labels ? order_block_label_color : color.new(order_block_label_color, 100))
+
+stop_block_at_current_bar(box _box, line _equilibrium) =>
+    box.set_extend(_box, extend.none)
+    box.set_right(_box, time)
+    if not na(_equilibrium)
+        line.set_extend(_equilibrium, extend.none)
+        line.set_x2(_equilibrium, time)
+
+extend_block_right(box _box, line _equilibrium) =>
+    box.set_extend(_box, extend.right)
+    if not na(_equilibrium)
+        line.set_extend(_equilibrium, extend.right)
+
+add_block(array<box> _boxes, array<line> _equilibriums, array<float> _tops, array<float> _bottoms, array<bool> _active, array<bool> _breaker, array<label> _labels, array<int> _types, float _top, float _bottom, color _color, string _text, int _start_time) =>
+    float equilibrium = (_top + _bottom) / 2.0
+    box new_box = box.new(_start_time, _top, time_close, _bottom, xloc=xloc.bar_time, border_color=color.new(_color, 100), bgcolor=_color, extend=extend.none)
+    line new_equilibrium = line.new(_start_time, equilibrium, time_close, equilibrium, xloc=xloc.bar_time, extend=extend.none, color=show_equilibrium ? equilibrium_color : color.new(equilibrium_color, 100), width=1, style=line.style_dashed)
+    label new_label = show_labels ? label.new(_start_time, equilibrium, _text, xloc=xloc.bar_time, style=label.style_label_left, color=order_block_label_color, textcolor=color.white, size=size.small) : na
+    array.push(_boxes, new_box)
+    array.push(_equilibriums, new_equilibrium)
+    array.push(_tops, _top)
+    array.push(_bottoms, _bottom)
+    array.push(_active, true)
+    array.push(_breaker, false)
+    array.push(_labels, new_label)
+    array.push(_types, BLOCK_TYPE_ORDER)
+    trim_all_block_types(_boxes, _equilibriums, _tops, _bottoms, _active, _breaker, _labels, _types)
+
+if new_bullish_order_block
+    add_block(bullish_boxes, bullish_equilibriums, bullish_tops, bullish_bottoms, bullish_active, bullish_breaker, bullish_labels, bullish_types, bullish_top, bullish_bottom, bullish_order_block_color, "Bullish OB", bullish_start_time)
+
+if new_bearish_order_block
+    add_block(bearish_boxes, bearish_equilibriums, bearish_tops, bearish_bottoms, bearish_active, bearish_breaker, bearish_labels, bearish_types, bearish_top, bearish_bottom, bearish_order_block_color, "Bearish OB", bearish_start_time)
+
+bullish_mitigated = false
+bearish_mitigated = false
+bullish_breaker_event = false
+bearish_breaker_event = false
+
+if array.size(bullish_boxes) > 0
+    for i = 0 to array.size(bullish_boxes) - 1
+        box current_box = array.get(bullish_boxes, i)
+        line current_equilibrium = array.get(bullish_equilibriums, i)
+        label current_label = array.get(bullish_labels, i)
+        if array.get(bullish_active, i)
+            box.set_right(current_box, time_close)
+            line.set_x2(current_equilibrium, time_close)
+            if not na(current_label)
+                label.set_x(current_label, time_close)
+            float block_top = array.get(bullish_tops, i)
+            float block_bottom = array.get(bullish_bottoms, i)
+            float block_equilibrium = (block_top + block_bottom) / 2.0
+            bool invalidated = close < block_bottom
+            bool mitigated = low <= block_equilibrium
+            if invalidated
+                bearish_breaker_event := show_breaker_blocks
+                bullish_mitigated := true
+                array.set(bullish_active, i, false)
+                array.set(bullish_breaker, i, show_breaker_blocks)
+                if show_breaker_blocks
+                    array.set(bullish_types, i, BLOCK_TYPE_BREAKER)
+                    extend_block_right(current_box, current_equilibrium)
+                    set_block_visibility(current_box, current_equilibrium, current_label, bearish_breaker_color, equilibrium_color, true)
+                    if not na(current_label)
+                        label.set_text(current_label, "Bearish Breaker")
+                else
+                    stop_block_at_current_bar(current_box, current_equilibrium)
+                    set_block_visibility(current_box, current_equilibrium, current_label, mitigated_block_color, equilibrium_color, keep_mitigated_blocks)
+                if keep_mitigated_blocks and show_mitigation_labels
+                    label.new(bar_index, block_equilibrium, show_breaker_blocks ? "Bearish Breaker" : "Bullish OB Mitigated", style=label.style_label_down, color=mitigation_label_color, textcolor=color.white, size=size.tiny)
+            else if mitigated
+                bullish_mitigated := true
+                array.set(bullish_active, i, false)
+                stop_block_at_current_bar(current_box, current_equilibrium)
+                set_block_visibility(current_box, current_equilibrium, current_label, mitigated_block_color, equilibrium_color, keep_mitigated_blocks)
+                if keep_mitigated_blocks and show_mitigation_labels
+                    label.new(bar_index, block_equilibrium, "Bullish OB Mitigated", style=label.style_label_down, color=mitigation_label_color, textcolor=color.white, size=size.tiny)
+        else if array.get(bullish_breaker, i)
+            if not na(current_label)
+                label.set_x(current_label, time_close)
+
+if array.size(bearish_boxes) > 0
+    for i = 0 to array.size(bearish_boxes) - 1
+        box current_box = array.get(bearish_boxes, i)
+        line current_equilibrium = array.get(bearish_equilibriums, i)
+        label current_label = array.get(bearish_labels, i)
+        if array.get(bearish_active, i)
+            box.set_right(current_box, time_close)
+            line.set_x2(current_equilibrium, time_close)
+            if not na(current_label)
+                label.set_x(current_label, time_close)
+            float block_top = array.get(bearish_tops, i)
+            float block_bottom = array.get(bearish_bottoms, i)
+            float block_equilibrium = (block_top + block_bottom) / 2.0
+            bool invalidated = close > block_top
+            bool mitigated = high >= block_equilibrium
+            if invalidated
+                bullish_breaker_event := show_breaker_blocks
+                bearish_mitigated := true
+                array.set(bearish_active, i, false)
+                array.set(bearish_breaker, i, show_breaker_blocks)
+                if show_breaker_blocks
+                    array.set(bearish_types, i, BLOCK_TYPE_BREAKER)
+                    extend_block_right(current_box, current_equilibrium)
+                    set_block_visibility(current_box, current_equilibrium, current_label, bullish_breaker_color, equilibrium_color, true)
+                    if not na(current_label)
+                        label.set_text(current_label, "Bullish Breaker")
+                else
+                    stop_block_at_current_bar(current_box, current_equilibrium)
+                    set_block_visibility(current_box, current_equilibrium, current_label, mitigated_block_color, equilibrium_color, keep_mitigated_blocks)
+                if keep_mitigated_blocks and show_mitigation_labels
+                    label.new(bar_index, block_equilibrium, show_breaker_blocks ? "Bullish Breaker" : "Bearish OB Mitigated", style=label.style_label_up, color=mitigation_label_color, textcolor=color.white, size=size.tiny)
+            else if mitigated
+                bearish_mitigated := true
+                array.set(bearish_active, i, false)
+                stop_block_at_current_bar(current_box, current_equilibrium)
+                set_block_visibility(current_box, current_equilibrium, current_label, mitigated_block_color, equilibrium_color, keep_mitigated_blocks)
+                if keep_mitigated_blocks and show_mitigation_labels
+                    label.new(bar_index, block_equilibrium, "Bearish OB Mitigated", style=label.style_label_up, color=mitigation_label_color, textcolor=color.white, size=size.tiny)
+        else if array.get(bearish_breaker, i)
+            if not na(current_label)
+                label.set_x(current_label, time_close)
+
+trim_all_block_types(bullish_boxes, bullish_equilibriums, bullish_tops, bullish_bottoms, bullish_active, bullish_breaker, bullish_labels, bullish_types)
+trim_all_block_types(bearish_boxes, bearish_equilibriums, bearish_tops, bearish_bottoms, bearish_active, bearish_breaker, bearish_labels, bearish_types)
+
+alertcondition(new_bullish_order_block, title="Order Blocks & Breakers [Aventra] Bullish Order Block", message="Order Blocks & Breakers [Aventra]: New bullish order block detected.")
+alertcondition(new_bearish_order_block, title="Order Blocks & Breakers [Aventra] Bearish Order Block", message="Order Blocks & Breakers [Aventra]: New bearish order block detected.")
+alertcondition(bullish_mitigated, title="Order Blocks & Breakers [Aventra] Bullish Order Block Mitigated", message="Order Blocks & Breakers [Aventra]: A bullish order block was mitigated.")
+alertcondition(bearish_mitigated, title="Order Blocks & Breakers [Aventra] Bearish Order Block Mitigated", message="Order Blocks & Breakers [Aventra]: A bearish order block was mitigated.")
+alertcondition(bullish_breaker_event, title="Order Blocks & Breakers [Aventra] Bullish Breaker", message="Order Blocks & Breakers [Aventra]: A bearish order block converted into a bullish breaker.")
+alertcondition(bearish_breaker_event, title="Order Blocks & Breakers [Aventra] Bearish Breaker", message="Order Blocks & Breakers [Aventra]: A bullish order block converted into a bearish breaker.")

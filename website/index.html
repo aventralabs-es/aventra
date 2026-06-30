@@ -1,0 +1,401 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Aventra Trading Tools</title>
+    <meta name="description" content="Aventra builds TradingView indicators and platform tools for technical traders.">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand wordmark" href="#home" aria-label="Aventra home">Aventra</a>
+      <nav class="main-nav" aria-label="Primary navigation">
+        <a href="#indicators">Indicators</a>
+        <a href="#education">Education</a>
+        <a href="#market-radar">Market Radar</a>
+        <a href="#support">Support</a>
+      </nav>
+    </header>
+
+    <main id="home">
+      <section class="hero-section" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow">TradingView indicators and technical setup tools</p>
+          <h1 id="hero-title">Aventra</h1>
+          <p class="hero-text">
+            Practical indicators for structure, liquidity, trend, volume, and setup context across active markets.
+          </p>
+          <div class="hero-actions">
+            <a class="button primary" href="#indicators">Browse indicators</a>
+            <a class="button secondary" href="#market-radar">View Market Radar</a>
+          </div>
+        </div>
+
+        <div class="market-panel" aria-label="Aventra market analysis preview">
+          <div class="panel-topline">
+            <span>BTCUSDT - 1H</span>
+            <strong>Trend Context</strong>
+          </div>
+          <div class="chart-preview" aria-hidden="true">
+            <span class="zone zone-supply"></span>
+            <span class="zone zone-demand"></span>
+            <svg viewBox="0 0 620 250" role="img" aria-label="Illustrative market chart">
+              <defs>
+                <linearGradient id="areaFill" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stop-color="#47b39d" stop-opacity=".28"></stop>
+                  <stop offset="100%" stop-color="#47b39d" stop-opacity="0"></stop>
+                </linearGradient>
+              </defs>
+              <path class="grid-line" d="M0 55H620M0 125H620M0 195H620"></path>
+              <path class="area-line" d="M0 188 C55 150 70 167 112 132 C160 92 192 116 225 82 C270 36 305 57 340 92 C378 130 415 108 452 76 C494 40 526 66 555 92 C584 116 598 104 620 78 L620 250 L0 250 Z"></path>
+              <path class="price-line" d="M0 188 C55 150 70 167 112 132 C160 92 192 116 225 82 C270 36 305 57 340 92 C378 130 415 108 452 76 C494 40 526 66 555 92 C584 116 598 104 620 78"></path>
+            </svg>
+            <span class="signal buy">BOS</span>
+            <span class="signal sell">Sweep</span>
+          </div>
+          <div class="panel-metrics">
+            <span><strong>Structure</strong>Bullish</span>
+            <span><strong>Volume</strong>Rising</span>
+            <span><strong>Risk</strong>Educational</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section intro-strip" aria-label="Platform overview">
+        <div>
+          <strong>Current focus</strong>
+          <span>TradingView Pine Script indicators</span>
+        </div>
+        <div>
+          <strong>Next platforms</strong>
+          <span>MetaTrader and cTrader ports</span>
+        </div>
+        <div>
+          <strong>Later product</strong>
+          <span>Market Radar for pattern and setup scanning</span>
+        </div>
+      </section>
+
+      <section class="section" id="indicators" aria-labelledby="indicators-title">
+        <div class="section-heading">
+          <p class="eyebrow">Indicator catalog</p>
+          <h2 id="indicators-title">Published TradingView indicators</h2>
+          <p>Explore the current Aventra TradingView portfolio by the trading context each indicator helps evaluate.</p>
+          <a class="profile-link" href="https://www.tradingview.com/u/aventralabs/#published-scripts" target="_blank" rel="noopener">Open Aventra on TradingView</a>
+        </div>
+
+        <div class="filter-bar" role="toolbar" aria-label="Indicator filters">
+          <button class="filter-button active" type="button" data-filter="all">All</button>
+          <button class="filter-button" type="button" data-filter="structure">Structure</button>
+          <button class="filter-button" type="button" data-filter="liquidity">Liquidity</button>
+          <button class="filter-button" type="button" data-filter="trend">Trend</button>
+          <button class="filter-button" type="button" data-filter="volume">Volume</button>
+          <button class="filter-button" type="button" data-filter="sessions">Sessions</button>
+        </div>
+
+        <div class="catalog-grid">
+          <article class="product-card" data-category="trend">
+            <a class="product-link" href="https://www.tradingview.com/script/e0LdtWh2-MA-Crossover-Pullback-Signals-Aventra/" target="_blank" rel="noopener">
+              <div class="product-shot"><img src="https://s3.tradingview.com/e/e0LdtWh2_mid.webp?v=1782740198" alt="MA Crossover Pullback Signals [Aventra] screenshot" loading="lazy"></div>
+              <span class="product-tag">Trend</span>
+              <h3>MA Crossover Pullback Signals [Aventra]</h3>
+              <p>Finds pullbacks after moving-average trend transitions.</p>
+              <strong>View on TradingView</strong>
+            </a>
+          </article>
+          <article class="product-card" data-category="trend">
+            <a class="product-link" href="https://www.tradingview.com/script/EqYTiW0u-Trend-Pullback-Signals-Aventra/" target="_blank" rel="noopener">
+              <div class="product-shot"><img src="https://s3.tradingview.com/e/EqYTiW0u_mid.webp?v=1782738520" alt="Trend Pullback Signals [Aventra] screenshot" loading="lazy"></div>
+              <span class="product-tag">Trend</span>
+              <h3>Trend Pullback Signals [Aventra]</h3>
+              <p>Highlights pullback opportunities inside a broader trend context.</p>
+              <strong>View on TradingView</strong>
+            </a>
+          </article>
+          <article class="product-card" data-category="volume">
+            <a class="product-link" href="https://www.tradingview.com/script/lAXDlWb3-Volume-Breakout-Signals-Aventra/" target="_blank" rel="noopener">
+              <div class="product-shot"><img src="https://s3.tradingview.com/l/lAXDlWb3_mid.webp?v=1782740230" alt="Volume Breakout Signals [Aventra] screenshot" loading="lazy"></div>
+              <span class="product-tag">Volume</span>
+              <h3>Volume Breakout Signals [Aventra]</h3>
+              <p>Flags breakout conditions when price expansion is confirmed by volume.</p>
+              <strong>View on TradingView</strong>
+            </a>
+          </article>
+          <article class="product-card" data-category="structure">
+            <a class="product-link" href="https://www.tradingview.com/script/Z0lsKzev-Breakout-Retest-Signals-Aventra/" target="_blank" rel="noopener">
+              <div class="product-shot"><img src="https://s3.tradingview.com/z/Z0lsKzev_mid.webp?v=1782740246" alt="Breakout Retest Signals [Aventra] screenshot" loading="lazy"></div>
+              <span class="product-tag">Structure</span>
+              <h3>Breakout Retest Signals [Aventra]</h3>
+              <p>Identifies breakout and retest conditions around important structure levels.</p>
+              <strong>View on TradingView</strong>
+            </a>
+          </article>
+          <article class="product-card" data-category="liquidity">
+            <a class="product-link" href="https://www.tradingview.com/script/zkMsNz3e-FVG-IFVG-Aventra/" target="_blank" rel="noopener">
+              <div class="product-shot"><img src="https://s3.tradingview.com/z/zkMsNz3e_mid.webp?v=1782692137" alt="FVG &amp; IFVG [Aventra] screenshot" loading="lazy"></div>
+              <span class="product-tag">Liquidity</span>
+              <h3>FVG &amp; IFVG [Aventra]</h3>
+              <p>Tracks fair value gaps, mitigations, and inverse fair value gap context.</p>
+              <strong>View on TradingView</strong>
+            </a>
+          </article>
+          <article class="product-card" data-category="liquidity">
+            <a class="product-link" href="https://www.tradingview.com/script/TTlypMhX-Liquidity-Sweeps-Aventra/" target="_blank" rel="noopener">
+              <div class="product-shot"><img src="https://s3.tradingview.com/t/TTlypMhX_mid.webp?v=1782577629" alt="Liquidity Sweeps [Aventra] screenshot" loading="lazy"></div>
+              <span class="product-tag">Liquidity</span>
+              <h3>Liquidity Sweeps [Aventra]</h3>
+              <p>Highlights buy-side and sell-side sweep conditions around prior extremes.</p>
+              <strong>View on TradingView</strong>
+            </a>
+          </article>
+          <article class="product-card" data-category="structure">
+            <a class="product-link" href="https://www.tradingview.com/script/xpMBMqtG-Premium-Discount-Zones-Aventra/" target="_blank" rel="noopener">
+              <div class="product-shot"><img src="https://s3.tradingview.com/x/xpMBMqtG_mid.webp?v=1782571598" alt="Premium Discount Zones [Aventra] screenshot" loading="lazy"></div>
+              <span class="product-tag">Structure</span>
+              <h3>Premium Discount Zones [Aventra]</h3>
+              <p>Frames price location around premium, equilibrium, and discount zones.</p>
+              <strong>View on TradingView</strong>
+            </a>
+          </article>
+          <article class="product-card" data-category="sessions">
+            <a class="product-link" href="https://www.tradingview.com/script/bnQIORKQ-Market-Sessions-Aventra/" target="_blank" rel="noopener">
+              <div class="product-shot"><img src="https://s3.tradingview.com/b/bnQIORKQ_mid.webp?v=1782552058" alt="Market Sessions [Aventra] screenshot" loading="lazy"></div>
+              <span class="product-tag">Sessions</span>
+              <h3>Market Sessions [Aventra]</h3>
+              <p>Shows major trading sessions and session ranges for intraday context.</p>
+              <strong>View on TradingView</strong>
+            </a>
+          </article>
+          <article class="product-card" data-category="liquidity">
+            <a class="product-link" href="https://www.tradingview.com/script/NVZXmfKU-Order-Blocks-Breakers-Aventra/" target="_blank" rel="noopener">
+              <div class="product-shot"><img src="https://s3.tradingview.com/n/NVZXmfKU_mid.webp?v=1782489454" alt="Order Blocks &amp; Breakers [Aventra] screenshot" loading="lazy"></div>
+              <span class="product-tag">Liquidity</span>
+              <h3>Order Blocks &amp; Breakers [Aventra]</h3>
+              <p>Marks order block and breaker context for structure-based review.</p>
+              <strong>View on TradingView</strong>
+            </a>
+          </article>
+          <article class="product-card" data-category="structure">
+            <a class="product-link" href="https://www.tradingview.com/script/1GffpMBy-Market-Structure-Aventra/" target="_blank" rel="noopener">
+              <div class="product-shot"><img src="https://s3.tradingview.com/1/1GffpMBy_mid.webp?v=1782463230" alt="Market Structure [Aventra] screenshot" loading="lazy"></div>
+              <span class="product-tag">Structure</span>
+              <h3>Market Structure [Aventra]</h3>
+              <p>Detects swing points, BOS, CHoCH, and active structure levels.</p>
+              <strong>View on TradingView</strong>
+            </a>
+          </article>
+          <article class="product-card" data-category="volume">
+            <a class="product-link" href="https://www.tradingview.com/script/0xUE6qai-Volume-Pressure-Aventra/" target="_blank" rel="noopener">
+              <div class="product-shot"><img src="https://s3.tradingview.com/0/0xUE6qai_mid.webp?v=1782377945" alt="Volume Pressure [Aventra] screenshot" loading="lazy"></div>
+              <span class="product-tag">Volume</span>
+              <h3>Volume Pressure [Aventra]</h3>
+              <p>Estimates bullish and bearish participation with relative volume context.</p>
+              <strong>View on TradingView</strong>
+            </a>
+          </article>
+          <article class="product-card" data-category="liquidity">
+            <a class="product-link" href="https://www.tradingview.com/script/zPhCKJBE-Liquidity-Zones-Aventra/" target="_blank" rel="noopener">
+              <div class="product-shot"><img src="https://s3.tradingview.com/z/zPhCKJBE_mid.webp?v=1782377100" alt="Liquidity Zones [Aventra] screenshot" loading="lazy"></div>
+              <span class="product-tag">Liquidity</span>
+              <h3>Liquidity Zones [Aventra]</h3>
+              <p>Detects equal high and equal low liquidity zones with sweep events.</p>
+              <strong>View on TradingView</strong>
+            </a>
+          </article>
+          <article class="product-card" data-category="trend">
+            <a class="product-link" href="https://www.tradingview.com/script/OWCyfe9B-Trend-Strength-Matrix-Aventra/" target="_blank" rel="noopener">
+              <div class="product-shot"><img src="https://s3.tradingview.com/o/OWCyfe9B_mid.png?v=1782740291" alt="Trend Strength Matrix [Aventra] screenshot" loading="lazy"></div>
+              <span class="product-tag">Trend</span>
+              <h3>Trend Strength Matrix [Aventra]</h3>
+              <p>Combines trend, momentum, strength, and volatility filters into clear states.</p>
+              <strong>View on TradingView</strong>
+            </a>
+          </article>
+          <article class="product-card" data-category="structure">
+            <a class="product-link" href="https://www.tradingview.com/script/Crt3DD1S-Dynamic-Support-Resistance-Aventra/" target="_blank" rel="noopener">
+              <div class="product-shot"><img src="https://s3.tradingview.com/c/Crt3DD1S_mid.png?v=1782375533" alt="Dynamic Support Resistance [Aventra] screenshot" loading="lazy"></div>
+              <span class="product-tag">Structure</span>
+              <h3>Dynamic Support Resistance [Aventra]</h3>
+              <p>Plots pivot-based support and resistance levels with breakout context.</p>
+              <strong>View on TradingView</strong>
+            </a>
+          </article>
+          <article class="product-card" data-category="trend">
+            <a class="product-link" href="https://www.tradingview.com/script/QKDY0Mak-MA-Crossover-Signals-Aventra/" target="_blank" rel="noopener">
+              <div class="product-shot"><img src="https://s3.tradingview.com/q/QKDY0Mak_mid.png?v=1782351508" alt="MA Crossover Signals [Aventra] screenshot" loading="lazy"></div>
+              <span class="product-tag">Trend</span>
+              <h3>MA Crossover Signals [Aventra]</h3>
+              <p>Plots configurable moving averages and crossover signal markers.</p>
+              <strong>View on TradingView</strong>
+            </a>
+          </article>
+          <article class="product-card coming-soon" data-category="liquidity">
+            <div class="product-link" aria-label="Turtle Soup Signals coming soon">
+              <div class="product-shot shot-turtle" aria-hidden="true"><span></span><svg viewBox="0 0 320 180"><path d="M0 128H320M0 88H320M0 48H320"></path><polyline points="12,104 46,86 82,92 120,58 154,44 188,92 226,102 268,78 308,86"></polyline><circle cx="154" cy="44" r="9"></circle><path d="M136 44H172"></path></svg></div>
+              <span class="product-tag">Coming soon</span>
+              <h3>Turtle Soup Signals [Aventra]</h3>
+              <p>Failed breakout and reversal-style Turtle Soup conditions are being refined before release.</p>
+              <strong>Coming soon</strong>
+            </div>
+          </article>
+        </div>
+      </section>
+      <section class="section education-section" id="education" aria-labelledby="education-title">
+        <div class="section-heading">
+          <p class="eyebrow">Education</p>
+          <h2 id="education-title">Build a complete market analysis foundation</h2>
+          <p>Learn market context through two main disciplines: technical analysis and fundamental analysis. Each path starts with core foundations, then moves into more advanced market interpretation. Educational content is for market analysis and does not constitute financial advice.</p>
+        </div>
+        <div class="education-pillars">
+          <article class="education-pillar">
+            <div class="pillar-heading">
+              <span class="track-label">Technical Analysis</span>
+              <h3>Chart-based market reading</h3>
+              <p>Understand price behavior, levels, trends, patterns, liquidity, and advanced chart concepts.</p>
+            </div>
+            <div class="education-subcards">
+              <div class="education-subcard">
+                <h4>Classical Technical Analysis</h4>
+                <div class="topic-grid compact-topics">
+                  <a class="topic-link" href="blog/support-resistance.html">Support &amp; Resistance</a>
+                  <a class="topic-link" href="blog/trendlines-channels.html">Trendlines &amp; Channels</a>
+                  <a class="topic-link" href="blog/chart-patterns.html">Chart Patterns</a>
+                  <a class="topic-link" href="blog/candlestick-basics.html">Candlestick Basics</a>
+                  <a class="topic-link" href="blog/moving-averages.html">Moving Averages</a>
+                  <a class="topic-link" href="blog/volume-analysis.html">Volume Analysis</a>
+                </div>
+              </div>
+              <div class="education-subcard">
+                <h4>Advanced Technical Analysis</h4>
+                <div class="topic-grid compact-topics">
+                  <span>Market Structure</span>
+                  <span>Liquidity Concepts</span>
+                  <span>Fair Value Gaps</span>
+                  <span>Premium / Discount</span>
+                  <span>Order Blocks</span>
+                  <span>ICT Concepts</span>
+                </div>
+              </div>
+            </div>
+          </article>
+          <article class="education-pillar">
+            <div class="pillar-heading">
+              <span class="track-label">Fundamental Analysis</span>
+              <h3>Market drivers and business quality</h3>
+              <p>Read the broader economic environment and analyze company-specific financial performance.</p>
+            </div>
+            <div class="education-subcards">
+              <div class="education-subcard">
+                <h4>Macro Analysis</h4>
+                <div class="topic-grid compact-topics">
+                  <span>Interest Rates</span>
+                  <span>Inflation</span>
+                  <span>Central Banks</span>
+                  <span>Economic Calendar</span>
+                  <span>Risk Sentiment</span>
+                  <span>Sector Rotation</span>
+                </div>
+              </div>
+              <div class="education-subcard">
+                <h4>Company Analysis</h4>
+                <div class="topic-grid compact-topics">
+                  <span>Financial Statements</span>
+                  <span>Revenue Analysis</span>
+                  <span>Earnings Quality</span>
+                  <span>Margins &amp; Profitability</span>
+                  <span>Debt &amp; Cash Flow</span>
+                  <span>Valuation Basics</span>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+      <section class="section radar-section" id="market-radar" aria-labelledby="radar-title">
+        <div class="section-heading">
+          <p class="eyebrow">Market Radar</p>
+          <h2 id="radar-title">Pattern and setup scanning concept</h2>
+          <p>
+            Market Radar will organize watchlist candidates by technical formations, reversal conditions, and ready-made setup templates. The goal is to surface market context for review, not to provide trade recommendations.
+          </p>
+        </div>
+        <div class="radar-table" role="table" aria-label="Market Radar concept">
+          <div role="row">
+            <span role="columnheader">Scan Category</span>
+            <span role="columnheader">What It Looks For</span>
+            <span role="columnheader">Example Setups</span>
+          </div>
+          <div role="row">
+            <span role="cell">Bullish formations</span>
+            <span role="cell">Continuation and accumulation structures that can support upside scenarios.</span>
+            <span role="cell">Breakout retest, trend pullback, volume breakout, tight consolidation.</span>
+          </div>
+          <div role="row">
+            <span role="cell">Reversal formations</span>
+            <span role="cell">Failed moves, exhaustion behavior, liquidity sweeps, and structure shifts after extremes.</span>
+            <span role="cell">Double bottom, failed breakdown, liquidity sweep, CHoCH after selloff.</span>
+          </div>
+          <div role="row">
+            <span role="cell">Ready setups</span>
+            <span role="cell">Template-based scans inspired by well-known trader methodologies and public education.</span>
+            <span role="cell">Minervini-style trend template, Oliver Kell-style momentum setup, Qullamaggie-style breakout scan.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section support-section" id="support" aria-labelledby="support-title">
+        <div>
+          <p class="eyebrow">Support</p>
+          <h2 id="support-title">Clear product help</h2>
+          <p>Support content should cover installation, indicator settings, platform availability, billing, and access status.</p>
+        </div>
+        <div class="support-links" aria-label="Support links">
+          <a href="#terms">Terms</a>
+          <a href="#privacy">Privacy</a>
+          <a href="#risk">Risk Disclaimer</a>
+        </div>
+      </section>
+
+      <section class="legal-band" aria-label="Legal summaries">
+        <article id="terms">
+          <h2>Terms</h2>
+          <p>Use Aventra tools for technical analysis and education. Final trading decisions remain the user&apos;s responsibility.</p>
+        </article>
+        <article id="privacy">
+          <h2>Privacy</h2>
+          <p>The MVP does not collect personal data. Future account and payment flows should publish clear data handling terms.</p>
+        </article>
+        <article id="risk">
+          <h2>Risk Disclaimer</h2>
+          <p>Trading involves risk. Aventra tools do not guarantee outcomes and are not financial advice.</p>
+        </article>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>Aventra</span>
+      <span>Technical trading tools for education and market analysis.</span>
+    </footer>
+
+    <script src="app.js"></script>
+  </body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

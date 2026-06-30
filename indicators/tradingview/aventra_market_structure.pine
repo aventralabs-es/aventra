@@ -1,0 +1,99 @@
+//@version=6
+// Aventra Version: 1.0.0
+indicator("Market Structure [Aventra]", shorttitle="Market Structure [Aventra]", overlay=true, max_lines_count=100, max_labels_count=100)
+
+calculation_timeframe = input.timeframe("", "Calculation Timeframe")
+swing_left = input.int(5, "Swing Left Bars", minval=1)
+swing_right = input.int(5, "Swing Right Bars", minval=1)
+show_swing_labels = input.bool(false, "Show Swing Labels")
+show_structure_labels = input.bool(true, "Show BOS/CHoCH Labels")
+show_structure_lines = input.bool(true, "Show Structure Lines")
+show_current_levels = input.bool(true, "Show Current Swing Levels")
+bullish_color = input.color(color.lime, "Bullish Color")
+bearish_color = input.color(color.red, "Bearish Color")
+neutral_color = input.color(color.gray, "Neutral Color")
+line_width = input.int(2, "Line Width", minval=1, maxval=5)
+
+use_chart_timeframe = calculation_timeframe == ""
+request_timeframe = use_chart_timeframe ? timeframe.period : calculation_timeframe
+
+calc_structure_source() =>
+    float swing_high = ta.pivothigh(high, swing_left, swing_right)
+    float swing_low = ta.pivotlow(low, swing_left, swing_right)
+    [swing_high, swing_low]
+
+[swing_high_chart, swing_low_chart] = calc_structure_source()
+[swing_high_tf, swing_low_tf] = request.security(syminfo.tickerid, request_timeframe, calc_structure_source(), barmerge.gaps_on, barmerge.lookahead_off)
+
+swing_high = use_chart_timeframe ? swing_high_chart : swing_high_tf
+swing_low = use_chart_timeframe ? swing_low_chart : swing_low_tf
+
+new_swing_high = not na(swing_high) and na(swing_high[1])
+new_swing_low = not na(swing_low) and na(swing_low[1])
+
+var float last_swing_high = na
+var int last_swing_high_bar = na
+var bool high_level_active = false
+var float last_swing_low = na
+var int last_swing_low_bar = na
+var bool low_level_active = false
+var int structure_trend = 0
+var line current_high_line = na
+var line current_low_line = na
+
+if new_swing_high
+    int swing_bar = bar_index - swing_right
+    last_swing_high := swing_high
+    last_swing_high_bar := swing_bar
+    high_level_active := true
+    if show_swing_labels
+        label.new(swing_bar, swing_high, "SH", style=label.style_label_down, color=color.new(bearish_color, 0), textcolor=color.white, size=size.tiny)
+    if show_current_levels
+        if not na(current_high_line)
+            line.delete(current_high_line)
+        current_high_line := line.new(swing_bar, swing_high, bar_index, swing_high, extend=extend.right, color=color.new(bearish_color, 45), width=1, style=line.style_dashed)
+
+if new_swing_low
+    int swing_bar = bar_index - swing_right
+    last_swing_low := swing_low
+    last_swing_low_bar := swing_bar
+    low_level_active := true
+    if show_swing_labels
+        label.new(swing_bar, swing_low, "SL", style=label.style_label_up, color=color.new(bullish_color, 0), textcolor=color.black, size=size.tiny)
+    if show_current_levels
+        if not na(current_low_line)
+            line.delete(current_low_line)
+        current_low_line := line.new(swing_bar, swing_low, bar_index, swing_low, extend=extend.right, color=color.new(bullish_color, 45), width=1, style=line.style_dashed)
+
+bullish_break = high_level_active and not na(last_swing_high) and ta.crossover(close, last_swing_high)
+bearish_break = low_level_active and not na(last_swing_low) and ta.crossunder(close, last_swing_low)
+
+bullish_choch = bullish_break and structure_trend == -1
+bullish_bos = bullish_break and structure_trend != -1
+bearish_choch = bearish_break and structure_trend == 1
+bearish_bos = bearish_break and structure_trend != 1
+
+if bullish_break
+    high_level_active := false
+    string bullish_label_text = bullish_choch ? "Bullish CHoCH" : "Bullish BOS"
+    if show_structure_lines and not na(last_swing_high_bar)
+        line.new(last_swing_high_bar, last_swing_high, bar_index, last_swing_high, color=bullish_color, width=line_width)
+    if show_structure_labels
+        label.new(bar_index, last_swing_high, bullish_label_text, style=label.style_label_up, color=bullish_color, textcolor=color.black, size=size.small)
+    structure_trend := 1
+
+if bearish_break
+    low_level_active := false
+    string bearish_label_text = bearish_choch ? "Bearish CHoCH" : "Bearish BOS"
+    if show_structure_lines and not na(last_swing_low_bar)
+        line.new(last_swing_low_bar, last_swing_low, bar_index, last_swing_low, color=bearish_color, width=line_width)
+    if show_structure_labels
+        label.new(bar_index, last_swing_low, bearish_label_text, style=label.style_label_down, color=bearish_color, textcolor=color.white, size=size.small)
+    structure_trend := -1
+
+barcolor(structure_trend == 1 ? color.new(bullish_color, 75) : structure_trend == -1 ? color.new(bearish_color, 75) : na)
+
+alertcondition(bullish_bos, title="Market Structure [Aventra] Bullish BOS", message="Market Structure [Aventra]: Bullish break of structure detected.")
+alertcondition(bearish_bos, title="Market Structure [Aventra] Bearish BOS", message="Market Structure [Aventra]: Bearish break of structure detected.")
+alertcondition(bullish_choch, title="Market Structure [Aventra] Bullish CHoCH", message="Market Structure [Aventra]: Bullish change of character detected.")
+alertcondition(bearish_choch, title="Market Structure [Aventra] Bearish CHoCH", message="Market Structure [Aventra]: Bearish change of character detected.")

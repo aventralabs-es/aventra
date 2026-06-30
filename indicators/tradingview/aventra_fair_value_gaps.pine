@@ -1,0 +1,295 @@
+//@version=6
+// Aventra Version: 1.3.8
+indicator("FVG & IFVG [Aventra]", shorttitle="FVG & IFVG [Aventra]", overlay=true, max_boxes_count=500, max_lines_count=500, max_labels_count=500)
+
+calculation_timeframe = input.timeframe("", "Calculation Timeframe")
+atr_length = input.int(14, "ATR Length", minval=1)
+minimum_gap_atr = input.float(0.10, "Minimum Gap ATR", minval=0.0, step=0.01)
+show_fvg = input.bool(true, "Show FVG")
+show_inverse_fvg = input.bool(false, "Show IFVG")
+show_price_gaps = input.bool(false, "Show Price Gaps")
+max_fvg = input.int(50, "Maximum FVG", minval=0, maxval=200)
+max_ifvg = input.int(50, "Maximum IFVG", minval=0, maxval=200)
+max_price_gaps = input.int(50, "Maximum Price Gaps", minval=0, maxval=200)
+show_gap_labels = input.bool(false, "Show Gap Labels")
+show_midpoint = input.bool(true, "Show Gap Midpoint")
+show_mitigation_labels = input.bool(false, "Show Mitigation Labels")
+keep_mitigated_gaps = input.bool(false, "Keep Mitigated Gaps")
+bullish_color = input.color(color.new(color.lime, 92), "Bullish FVG Color")
+bearish_color = input.color(color.new(color.red, 92), "Bearish FVG Color")
+bullish_price_gap_color = input.color(color.new(color.aqua, 92), "Bullish Price Gap Color")
+bearish_price_gap_color = input.color(color.new(color.fuchsia, 92), "Bearish Price Gap Color")
+bullish_inverse_color = input.color(color.new(color.teal, 92), "Bullish IFVG Color")
+bearish_inverse_color = input.color(color.new(color.orange, 92), "Bearish IFVG Color")
+mitigated_color = input.color(color.new(color.gray, 92), "Mitigated FVG Color")
+midpoint_color = input.color(color.new(color.white, 80), "Midpoint Color")
+
+int GAP_TYPE_FVG = 0
+int GAP_TYPE_PRICE = 1
+int GAP_TYPE_IFVG = 2
+
+use_chart_timeframe = calculation_timeframe == ""
+request_timeframe = use_chart_timeframe ? timeframe.period : calculation_timeframe
+
+calc_gap_source() =>
+    float atr_value = ta.atr(atr_length)
+    bool bullish_fvg = low > high[2]
+    bool bearish_fvg = high < low[2]
+    bool bullish_price_gap = low > high[1]
+    bool bearish_price_gap = high < low[1]
+    float bullish_fvg_top = bullish_fvg ? low : na
+    float bullish_fvg_bottom = bullish_fvg ? high[2] : na
+    int bullish_fvg_time = bullish_fvg ? time[1] : na
+    float bearish_fvg_top = bearish_fvg ? low[2] : na
+    float bearish_fvg_bottom = bearish_fvg ? high : na
+    int bearish_fvg_time = bearish_fvg ? time[1] : na
+    float bullish_price_gap_top = bullish_price_gap ? low : na
+    float bullish_price_gap_bottom = bullish_price_gap ? high[1] : na
+    int bullish_price_gap_time = bullish_price_gap ? time : na
+    float bearish_price_gap_top = bearish_price_gap ? low[1] : na
+    float bearish_price_gap_bottom = bearish_price_gap ? high : na
+    int bearish_price_gap_time = bearish_price_gap ? time : na
+    [bullish_fvg, bearish_fvg, bullish_fvg_top, bullish_fvg_bottom, bullish_fvg_time, bearish_fvg_top, bearish_fvg_bottom, bearish_fvg_time, atr_value, bullish_price_gap, bearish_price_gap, bullish_price_gap_top, bullish_price_gap_bottom, bullish_price_gap_time, bearish_price_gap_top, bearish_price_gap_bottom, bearish_price_gap_time]
+
+[bullish_fvg_chart, bearish_fvg_chart, bullish_top_chart, bullish_bottom_chart, bullish_time_chart, bearish_top_chart, bearish_bottom_chart, bearish_time_chart, atr_chart, bullish_price_gap_chart, bearish_price_gap_chart, bullish_price_gap_top_chart, bullish_price_gap_bottom_chart, bullish_price_gap_time_chart, bearish_price_gap_top_chart, bearish_price_gap_bottom_chart, bearish_price_gap_time_chart] = calc_gap_source()
+[bullish_fvg_tf, bearish_fvg_tf, bullish_top_tf, bullish_bottom_tf, bullish_time_tf, bearish_top_tf, bearish_bottom_tf, bearish_time_tf, atr_tf, bullish_price_gap_tf, bearish_price_gap_tf, bullish_price_gap_top_tf, bullish_price_gap_bottom_tf, bullish_price_gap_time_tf, bearish_price_gap_top_tf, bearish_price_gap_bottom_tf, bearish_price_gap_time_tf] = request.security(syminfo.tickerid, request_timeframe, calc_gap_source(), barmerge.gaps_on, barmerge.lookahead_off)
+
+bullish_fvg_raw = use_chart_timeframe ? bullish_fvg_chart : bullish_fvg_tf
+bearish_fvg_raw = use_chart_timeframe ? bearish_fvg_chart : bearish_fvg_tf
+bullish_top = use_chart_timeframe ? bullish_top_chart : bullish_top_tf
+bullish_bottom = use_chart_timeframe ? bullish_bottom_chart : bullish_bottom_tf
+bullish_time = use_chart_timeframe ? bullish_time_chart : bullish_time_tf
+bearish_top = use_chart_timeframe ? bearish_top_chart : bearish_top_tf
+bearish_bottom = use_chart_timeframe ? bearish_bottom_chart : bearish_bottom_tf
+bearish_time = use_chart_timeframe ? bearish_time_chart : bearish_time_tf
+atr_value = use_chart_timeframe ? atr_chart : atr_tf
+bullish_price_gap_raw = use_chart_timeframe ? bullish_price_gap_chart : bullish_price_gap_tf
+bearish_price_gap_raw = use_chart_timeframe ? bearish_price_gap_chart : bearish_price_gap_tf
+bullish_price_gap_top = use_chart_timeframe ? bullish_price_gap_top_chart : bullish_price_gap_top_tf
+bullish_price_gap_bottom = use_chart_timeframe ? bullish_price_gap_bottom_chart : bullish_price_gap_bottom_tf
+bullish_price_gap_time = use_chart_timeframe ? bullish_price_gap_time_chart : bullish_price_gap_time_tf
+bearish_price_gap_top = use_chart_timeframe ? bearish_price_gap_top_chart : bearish_price_gap_top_tf
+bearish_price_gap_bottom = use_chart_timeframe ? bearish_price_gap_bottom_chart : bearish_price_gap_bottom_tf
+bearish_price_gap_time = use_chart_timeframe ? bearish_price_gap_time_chart : bearish_price_gap_time_tf
+
+bullish_gap_size = bullish_top - bullish_bottom
+bearish_gap_size = bearish_top - bearish_bottom
+bullish_price_gap_size = bullish_price_gap_top - bullish_price_gap_bottom
+bearish_price_gap_size = bearish_price_gap_top - bearish_price_gap_bottom
+minimum_gap_size = atr_value * minimum_gap_atr
+new_bullish_price_gap = show_price_gaps and bullish_price_gap_raw and bullish_price_gap_size >= minimum_gap_size
+new_bearish_price_gap = show_price_gaps and bearish_price_gap_raw and bearish_price_gap_size >= minimum_gap_size
+new_bullish_fvg = show_fvg and bullish_fvg_raw and bullish_gap_size >= minimum_gap_size
+new_bearish_fvg = show_fvg and bearish_fvg_raw and bearish_gap_size >= minimum_gap_size
+
+var array<box> bullish_boxes = array.new<box>()
+var array<line> bullish_midpoints = array.new<line>()
+var array<float> bullish_tops = array.new<float>()
+var array<float> bullish_bottoms = array.new<float>()
+var array<bool> bullish_active = array.new<bool>()
+var array<bool> bullish_inverse = array.new<bool>()
+var array<label> bullish_labels = array.new<label>()
+var array<int> bullish_types = array.new<int>()
+
+var array<box> bearish_boxes = array.new<box>()
+var array<line> bearish_midpoints = array.new<line>()
+var array<float> bearish_tops = array.new<float>()
+var array<float> bearish_bottoms = array.new<float>()
+var array<bool> bearish_active = array.new<bool>()
+var array<bool> bearish_inverse = array.new<bool>()
+var array<label> bearish_labels = array.new<label>()
+var array<int> bearish_types = array.new<int>()
+
+safe_delete_label(label _label) =>
+    if not na(_label)
+        label.delete(_label)
+
+safe_delete_line(line _line) =>
+    if not na(_line)
+        line.delete(_line)
+
+delete_gap_at(array<box> _boxes, array<line> _midpoints, array<float> _tops, array<float> _bottoms, array<bool> _active, array<bool> _inverse, array<label> _labels, array<int> _types, int _index) =>
+    box.delete(array.get(_boxes, _index))
+    safe_delete_line(array.get(_midpoints, _index))
+    safe_delete_label(array.get(_labels, _index))
+    array.remove(_boxes, _index)
+    array.remove(_midpoints, _index)
+    array.remove(_tops, _index)
+    array.remove(_bottoms, _index)
+    array.remove(_active, _index)
+    array.remove(_inverse, _index)
+    array.remove(_labels, _index)
+    array.remove(_types, _index)
+
+count_gap_type(array<int> _types, int _type) =>
+    int count = 0
+    if array.size(_types) > 0
+        for i = 0 to array.size(_types) - 1
+            if array.get(_types, i) == _type
+                count += 1
+    count
+
+trim_gap_type(array<box> _boxes, array<line> _midpoints, array<float> _tops, array<float> _bottoms, array<bool> _active, array<bool> _inverse, array<label> _labels, array<int> _types, int _type, int _maximum) =>
+    while count_gap_type(_types, _type) > _maximum
+        int delete_index = na
+        for i = 0 to array.size(_types) - 1
+            if array.get(_types, i) == _type and na(delete_index)
+                delete_index := i
+        if na(delete_index)
+            break
+        delete_gap_at(_boxes, _midpoints, _tops, _bottoms, _active, _inverse, _labels, _types, delete_index)
+
+trim_all_gap_types(array<box> _boxes, array<line> _midpoints, array<float> _tops, array<float> _bottoms, array<bool> _active, array<bool> _inverse, array<label> _labels, array<int> _types) =>
+    trim_gap_type(_boxes, _midpoints, _tops, _bottoms, _active, _inverse, _labels, _types, GAP_TYPE_FVG, max_fvg)
+    trim_gap_type(_boxes, _midpoints, _tops, _bottoms, _active, _inverse, _labels, _types, GAP_TYPE_PRICE, max_price_gaps)
+    trim_gap_type(_boxes, _midpoints, _tops, _bottoms, _active, _inverse, _labels, _types, GAP_TYPE_IFVG, max_ifvg)
+
+set_gap_visibility(box _box, line _midpoint, label _label, color _box_color, color _line_color, bool _visible) =>
+    box.set_bgcolor(_box, _visible ? _box_color : color.new(_box_color, 100))
+    box.set_border_color(_box, color.new(_box_color, 100))
+    if not na(_midpoint)
+        line.set_color(_midpoint, _visible and show_midpoint ? _line_color : color.new(_line_color, 100))
+    if not na(_label)
+        label.set_textcolor(_label, _visible and show_gap_labels ? color.white : color.new(color.white, 100))
+        label.set_color(_label, _visible and show_gap_labels ? color.new(_box_color, 0) : color.new(_box_color, 100))
+
+stop_gap_at_current_bar(box _box, line _midpoint) =>
+    box.set_extend(_box, extend.none)
+    box.set_right(_box, time)
+    if not na(_midpoint)
+        line.set_extend(_midpoint, extend.none)
+        line.set_x2(_midpoint, time)
+
+extend_gap_right(box _box, line _midpoint) =>
+    box.set_extend(_box, extend.right)
+    if not na(_midpoint)
+        line.set_extend(_midpoint, extend.right)
+
+add_gap(array<box> _boxes, array<line> _midpoints, array<float> _tops, array<float> _bottoms, array<bool> _active, array<bool> _inverse, array<label> _labels, array<int> _types, float _top, float _bottom, color _color, string _text, int _start_time, int _type) =>
+    float midpoint = (_top + _bottom) / 2.0
+    int start_time = _start_time
+    box new_box = box.new(start_time, _top, time_close, _bottom, xloc=xloc.bar_time, border_color=color.new(_color, 100), bgcolor=_color, extend=extend.none)
+    line new_midpoint = line.new(start_time, midpoint, time_close, midpoint, xloc=xloc.bar_time, extend=extend.none, color=show_midpoint ? midpoint_color : color.new(midpoint_color, 100), width=1, style=line.style_dashed)
+    label new_label = show_gap_labels ? label.new(start_time, midpoint, _text, xloc=xloc.bar_time, style=label.style_label_left, color=color.new(_color, 0), textcolor=color.white, size=size.small) : na
+    array.push(_boxes, new_box)
+    array.push(_midpoints, new_midpoint)
+    array.push(_tops, _top)
+    array.push(_bottoms, _bottom)
+    array.push(_active, true)
+    array.push(_inverse, false)
+    array.push(_labels, new_label)
+    array.push(_types, _type)
+    trim_all_gap_types(_boxes, _midpoints, _tops, _bottoms, _active, _inverse, _labels, _types)
+
+if new_bullish_price_gap
+    add_gap(bullish_boxes, bullish_midpoints, bullish_tops, bullish_bottoms, bullish_active, bullish_inverse, bullish_labels, bullish_types, bullish_price_gap_top, bullish_price_gap_bottom, bullish_price_gap_color, "Bullish Gap", bullish_price_gap_time, GAP_TYPE_PRICE)
+
+if new_bearish_price_gap
+    add_gap(bearish_boxes, bearish_midpoints, bearish_tops, bearish_bottoms, bearish_active, bearish_inverse, bearish_labels, bearish_types, bearish_price_gap_top, bearish_price_gap_bottom, bearish_price_gap_color, "Bearish Gap", bearish_price_gap_time, GAP_TYPE_PRICE)
+
+if new_bullish_fvg
+    add_gap(bullish_boxes, bullish_midpoints, bullish_tops, bullish_bottoms, bullish_active, bullish_inverse, bullish_labels, bullish_types, bullish_top, bullish_bottom, bullish_color, "Bullish FVG", bullish_time, GAP_TYPE_FVG)
+
+if new_bearish_fvg
+    add_gap(bearish_boxes, bearish_midpoints, bearish_tops, bearish_bottoms, bearish_active, bearish_inverse, bearish_labels, bearish_types, bearish_top, bearish_bottom, bearish_color, "Bearish FVG", bearish_time, GAP_TYPE_FVG)
+
+bullish_mitigated = false
+bearish_mitigated = false
+bullish_ifvg = false
+bearish_ifvg = false
+
+if array.size(bullish_boxes) > 0
+    for i = 0 to array.size(bullish_boxes) - 1
+        box current_box = array.get(bullish_boxes, i)
+        line current_midpoint = array.get(bullish_midpoints, i)
+        label current_label = array.get(bullish_labels, i)
+        if array.get(bullish_active, i)
+            box.set_right(current_box, time_close)
+            line.set_x2(current_midpoint, time_close)
+            if not na(current_label)
+                label.set_x(current_label, time_close)
+            float gap_top = array.get(bullish_tops, i)
+            float gap_bottom = array.get(bullish_bottoms, i)
+            float gap_midpoint = (gap_top + gap_bottom) / 2.0
+            bool invalidated = close < gap_bottom
+            bool mitigated = low <= gap_midpoint
+            if invalidated
+                bearish_ifvg := show_inverse_fvg
+                bullish_mitigated := true
+                array.set(bullish_active, i, false)
+                array.set(bullish_inverse, i, show_inverse_fvg)
+                if show_inverse_fvg
+                    array.set(bullish_types, i, GAP_TYPE_IFVG)
+                    extend_gap_right(current_box, current_midpoint)
+                    set_gap_visibility(current_box, current_midpoint, current_label, bearish_inverse_color, midpoint_color, true)
+                    if not na(current_label)
+                        label.set_text(current_label, "Bearish IFVG")
+                else
+                    stop_gap_at_current_bar(current_box, current_midpoint)
+                    set_gap_visibility(current_box, current_midpoint, current_label, mitigated_color, midpoint_color, keep_mitigated_gaps)
+                if keep_mitigated_gaps and show_mitigation_labels
+                    label.new(bar_index, gap_midpoint, show_inverse_fvg ? "Bearish IFVG" : "Bullish Gap Mitigated", style=label.style_label_down, color=show_inverse_fvg ? color.new(bearish_inverse_color, 0) : color.new(mitigated_color, 0), textcolor=color.white, size=size.tiny)
+            else if mitigated
+                bullish_mitigated := true
+                array.set(bullish_active, i, false)
+                stop_gap_at_current_bar(current_box, current_midpoint)
+                set_gap_visibility(current_box, current_midpoint, current_label, mitigated_color, midpoint_color, keep_mitigated_gaps)
+                if keep_mitigated_gaps and show_mitigation_labels
+                    label.new(bar_index, gap_midpoint, "Bullish Gap Mitigated", style=label.style_label_down, color=color.new(mitigated_color, 0), textcolor=color.white, size=size.tiny)
+        else if array.get(bullish_inverse, i)
+            if not na(current_label)
+                label.set_x(current_label, time_close)
+
+if array.size(bearish_boxes) > 0
+    for i = 0 to array.size(bearish_boxes) - 1
+        box current_box = array.get(bearish_boxes, i)
+        line current_midpoint = array.get(bearish_midpoints, i)
+        label current_label = array.get(bearish_labels, i)
+        if array.get(bearish_active, i)
+            box.set_right(current_box, time_close)
+            line.set_x2(current_midpoint, time_close)
+            if not na(current_label)
+                label.set_x(current_label, time_close)
+            float gap_top = array.get(bearish_tops, i)
+            float gap_bottom = array.get(bearish_bottoms, i)
+            float gap_midpoint = (gap_top + gap_bottom) / 2.0
+            bool invalidated = close > gap_top
+            bool mitigated = high >= gap_midpoint
+            if invalidated
+                bullish_ifvg := show_inverse_fvg
+                bearish_mitigated := true
+                array.set(bearish_active, i, false)
+                array.set(bearish_inverse, i, show_inverse_fvg)
+                if show_inverse_fvg
+                    array.set(bearish_types, i, GAP_TYPE_IFVG)
+                    extend_gap_right(current_box, current_midpoint)
+                    set_gap_visibility(current_box, current_midpoint, current_label, bullish_inverse_color, midpoint_color, true)
+                    if not na(current_label)
+                        label.set_text(current_label, "Bullish IFVG")
+                else
+                    stop_gap_at_current_bar(current_box, current_midpoint)
+                    set_gap_visibility(current_box, current_midpoint, current_label, mitigated_color, midpoint_color, keep_mitigated_gaps)
+                if keep_mitigated_gaps and show_mitigation_labels
+                    label.new(bar_index, gap_midpoint, show_inverse_fvg ? "Bullish IFVG" : "Bearish Gap Mitigated", style=label.style_label_up, color=show_inverse_fvg ? color.new(bullish_inverse_color, 0) : color.new(mitigated_color, 0), textcolor=color.white, size=size.tiny)
+            else if mitigated
+                bearish_mitigated := true
+                array.set(bearish_active, i, false)
+                stop_gap_at_current_bar(current_box, current_midpoint)
+                set_gap_visibility(current_box, current_midpoint, current_label, mitigated_color, midpoint_color, keep_mitigated_gaps)
+                if keep_mitigated_gaps and show_mitigation_labels
+                    label.new(bar_index, gap_midpoint, "Bearish Gap Mitigated", style=label.style_label_up, color=color.new(mitigated_color, 0), textcolor=color.white, size=size.tiny)
+        else if array.get(bearish_inverse, i)
+            if not na(current_label)
+                label.set_x(current_label, time_close)
+
+trim_all_gap_types(bullish_boxes, bullish_midpoints, bullish_tops, bullish_bottoms, bullish_active, bullish_inverse, bullish_labels, bullish_types)
+trim_all_gap_types(bearish_boxes, bearish_midpoints, bearish_tops, bearish_bottoms, bearish_active, bearish_inverse, bearish_labels, bearish_types)
+
+alertcondition(new_bullish_price_gap, title="FVG & IFVG [Aventra] Bullish Price Gap", message="FVG & IFVG [Aventra]: New bullish price gap detected.")
+alertcondition(new_bearish_price_gap, title="FVG & IFVG [Aventra] Bearish Price Gap", message="FVG & IFVG [Aventra]: New bearish price gap detected.")
+alertcondition(new_bullish_fvg, title="FVG & IFVG [Aventra] Bullish FVG", message="FVG & IFVG [Aventra]: New bullish fair value gap detected.")
+alertcondition(new_bearish_fvg, title="FVG & IFVG [Aventra] Bearish FVG", message="FVG & IFVG [Aventra]: New bearish fair value gap detected.")
+alertcondition(bullish_mitigated, title="FVG & IFVG [Aventra] Bullish Gap Mitigated", message="FVG & IFVG [Aventra]: A bullish gap was mitigated.")
+alertcondition(bearish_mitigated, title="FVG & IFVG [Aventra] Bearish Gap Mitigated", message="FVG & IFVG [Aventra]: A bearish gap was mitigated.")
+alertcondition(bullish_ifvg, title="FVG & IFVG [Aventra] Bullish IFVG", message="FVG & IFVG [Aventra]: A bearish gap inverted into a bullish IFVG.")
+alertcondition(bearish_ifvg, title="FVG & IFVG [Aventra] Bearish IFVG", message="FVG & IFVG [Aventra]: A bullish gap inverted into a bearish IFVG.")

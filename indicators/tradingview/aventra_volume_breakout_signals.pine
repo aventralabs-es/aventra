@@ -1,0 +1,156 @@
+//@version=6
+// Aventra Version: 1.0.1
+indicator("Volume Breakout Signals [Aventra]", shorttitle="Volume Breakout Signals [Aventra]", overlay=true, max_lines_count=500, max_labels_count=500, max_bars_back=5000)
+
+calculation_timeframe = input.timeframe("", "Calculation Timeframe")
+swing_left = input.int(5, "Swing Left Bars", minval=1, maxval=500)
+swing_right = input.int(5, "Swing Right Bars", minval=1, maxval=500)
+breakout_mode = input.string("Close Break", "Breakout Mode", options=["Close Break", "Wick Break"])
+signal_direction = input.string("Both", "Signal Direction", options=["Both", "Bullish Only", "Bearish Only"])
+atr_length = input.int(14, "ATR Length", minval=1)
+minimum_breakout_atr = input.float(0.10, "Minimum Breakout ATR", minval=0.0, step=0.01)
+volume_ma_length = input.int(21, "Volume MA Length", minval=1)
+minimum_relative_volume = input.float(1.50, "Minimum Relative Volume", minval=0.0, step=0.05)
+use_trend_filter = input.bool(false, "Use Trend Filter")
+trend_ma_length = input.int(55, "Trend MA Length", minval=1)
+trend_ma_timeframe = input.timeframe("D", "Trend MA Timeframe")
+show_trend_ma = input.bool(true, "Show Trend MA")
+trend_ma_color = input.color(color.new(color.rgb(33, 150, 243), 30), "Trend MA Color")
+show_signal_markers = input.bool(true, "Show Signal Markers")
+show_signal_labels = input.bool(true, "Show Signal Labels")
+show_breakout_lines = input.bool(true, "Show Breakout Lines")
+keep_signals = input.bool(true, "Keep Signals")
+maximum_signals = input.int(100, "Maximum Signals", minval=1, maxval=250)
+signal_label_offset_atr = input.float(0.35, "Signal Label Offset ATR", minval=0.0, step=0.05)
+bullish_signal_color = input.color(color.new(color.lime, 50), "Bullish Signal Color")
+bearish_signal_color = input.color(color.new(color.red, 50), "Bearish Signal Color")
+
+use_chart_timeframe = calculation_timeframe == ""
+request_timeframe = use_chart_timeframe ? timeframe.period : calculation_timeframe
+
+calc_volume_breakout_source() =>
+    float atr_value = ta.atr(atr_length)
+    float minimum_breakout = atr_value * minimum_breakout_atr
+    float volume_ma = ta.sma(volume, volume_ma_length)
+    float relative_volume = not na(volume_ma) and volume_ma != 0 ? volume / volume_ma : na
+    bool volume_ok = not na(relative_volume) and relative_volume >= minimum_relative_volume
+    float pivot_high = ta.pivothigh(high, swing_left, swing_right)
+    float pivot_low = ta.pivotlow(low, swing_left, swing_right)
+    var float resistance_level = na
+    var float support_level = na
+    var int resistance_time = na
+    var int support_time = na
+
+    if not na(pivot_high)
+        resistance_level := pivot_high
+        resistance_time := time[swing_right]
+
+    if not na(pivot_low)
+        support_level := pivot_low
+        support_time := time[swing_right]
+
+    float bullish_break_price = breakout_mode == "Close Break" ? close : high
+    float bearish_break_price = breakout_mode == "Close Break" ? close : low
+    float bullish_previous_price = breakout_mode == "Close Break" ? close[1] : high[1]
+    float bearish_previous_price = breakout_mode == "Close Break" ? close[1] : low[1]
+    bool bullish_level_break = not na(resistance_level) and bullish_break_price > resistance_level and bullish_previous_price <= resistance_level
+    bool bearish_level_break = not na(support_level) and bearish_break_price < support_level and bearish_previous_price >= support_level
+    bool bullish_distance_ok = not na(resistance_level) and (minimum_breakout_atr == 0.0 or bullish_break_price - resistance_level >= minimum_breakout)
+    bool bearish_distance_ok = not na(support_level) and (minimum_breakout_atr == 0.0 or support_level - bearish_break_price >= minimum_breakout)
+    bool bullish_signal = bullish_level_break and bullish_distance_ok and volume_ok
+    bool bearish_signal = bearish_level_break and bearish_distance_ok and volume_ok
+
+    [bullish_signal, bearish_signal, resistance_level, support_level, resistance_time, support_time, time, time_close, atr_value, relative_volume]
+
+[bullish_signal_chart, bearish_signal_chart, resistance_level_chart, support_level_chart, resistance_time_chart, support_time_chart, source_time_chart, source_time_close_chart, atr_chart, relative_volume_chart] = calc_volume_breakout_source()
+[bullish_signal_tf, bearish_signal_tf, resistance_level_tf, support_level_tf, resistance_time_tf, support_time_tf, source_time_tf, source_time_close_tf, atr_tf, relative_volume_tf] = request.security(syminfo.tickerid, request_timeframe, calc_volume_breakout_source(), barmerge.gaps_off, barmerge.lookahead_off)
+
+bool bullish_signal_raw = use_chart_timeframe ? bullish_signal_chart : bullish_signal_tf
+bool bearish_signal_raw = use_chart_timeframe ? bearish_signal_chart : bearish_signal_tf
+float resistance_level = use_chart_timeframe ? resistance_level_chart : resistance_level_tf
+float support_level = use_chart_timeframe ? support_level_chart : support_level_tf
+int resistance_time = use_chart_timeframe ? resistance_time_chart : resistance_time_tf
+int support_time = use_chart_timeframe ? support_time_chart : support_time_tf
+int source_time = use_chart_timeframe ? source_time_chart : source_time_tf
+int source_time_close = use_chart_timeframe ? source_time_close_chart : source_time_close_tf
+float source_atr = use_chart_timeframe ? atr_chart : atr_tf
+float source_relative_volume = use_chart_timeframe ? relative_volume_chart : relative_volume_tf
+
+trend_request_timeframe = trend_ma_timeframe == "" ? timeframe.period : trend_ma_timeframe
+trend_ma_value = request.security(syminfo.tickerid, trend_request_timeframe, ta.ema(close, trend_ma_length), barmerge.gaps_off, barmerge.lookahead_off)
+bool trend_bull_ok = not use_trend_filter or close >= trend_ma_value
+bool trend_bear_ok = not use_trend_filter or close <= trend_ma_value
+
+plot(use_trend_filter and show_trend_ma ? trend_ma_value : na, title="Trend MA", color=trend_ma_color, linewidth=2)
+
+var int last_bullish_signal_time = na
+var int last_bearish_signal_time = na
+var array<line> signal_lines = array.new<line>()
+var array<label> signal_markers = array.new<label>()
+var array<label> signal_labels = array.new<label>()
+
+safe_delete_line(line _line) =>
+    if not na(_line)
+        line.delete(_line)
+
+safe_delete_label(label _label) =>
+    if not na(_label)
+        label.delete(_label)
+
+clear_signals() =>
+    while array.size(signal_lines) > 0
+        safe_delete_line(array.shift(signal_lines))
+    while array.size(signal_markers) > 0
+        safe_delete_label(array.shift(signal_markers))
+    while array.size(signal_labels) > 0
+        safe_delete_label(array.shift(signal_labels))
+
+trim_signals() =>
+    while array.size(signal_lines) > maximum_signals
+        safe_delete_line(array.shift(signal_lines))
+    while array.size(signal_markers) > maximum_signals
+        safe_delete_label(array.shift(signal_markers))
+    while array.size(signal_labels) > maximum_signals
+        safe_delete_label(array.shift(signal_labels))
+
+add_signal(int _level_time, int _signal_time, float _level, float _atr, float _relative_volume, bool _bullish) =>
+    if not keep_signals
+        clear_signals()
+    color signal_color = _bullish ? bullish_signal_color : bearish_signal_color
+    string base_label_text = _bullish ? "Bullish Volume Breakout" : "Bearish Volume Breakout"
+    string rel_vol_text = not na(_relative_volume) ? " | Rel Vol " + str.tostring(_relative_volume, "#.##") + "x" : ""
+    string label_text = base_label_text + rel_vol_text
+    line level_line = show_breakout_lines and not na(_level_time) and not na(_signal_time) and not na(_level) ? line.new(_level_time, _level, _signal_time, _level, xloc=xloc.bar_time, extend=extend.none, color=signal_color, width=2, style=line.style_solid) : na
+    label marker = show_signal_markers and not na(_signal_time) and not na(_level) ? label.new(_signal_time, _level, "", xloc=xloc.bar_time, style=_bullish ? label.style_triangleup : label.style_triangledown, color=signal_color, textcolor=signal_color, size=size.tiny) : na
+    float label_offset = _atr * signal_label_offset_atr
+    float label_y = _bullish ? _level - label_offset : _level + label_offset
+    label signal_label = show_signal_labels and not na(_signal_time) and not na(_level) ? label.new(_signal_time, label_y, label_text, xloc=xloc.bar_time, style=_bullish ? label.style_label_up : label.style_label_down, color=color.new(signal_color, 100), textcolor=signal_color, size=size.small) : na
+    array.push(signal_lines, level_line)
+    array.push(signal_markers, marker)
+    array.push(signal_labels, signal_label)
+    trim_signals()
+
+bool allow_bullish = signal_direction == "Both" or signal_direction == "Bullish Only"
+bool allow_bearish = signal_direction == "Both" or signal_direction == "Bearish Only"
+bool both_signals = bullish_signal_raw and bearish_signal_raw
+bool prefer_bullish = both_signals ? close > open : bullish_signal_raw
+bool prefer_bearish = both_signals ? close <= open : bearish_signal_raw
+bool bullish_candidate = allow_bullish and bullish_signal_raw and (not both_signals or prefer_bullish) and (na(last_bullish_signal_time) or source_time != last_bullish_signal_time)
+bool bearish_candidate = allow_bearish and bearish_signal_raw and (not both_signals or prefer_bearish) and (na(last_bearish_signal_time) or source_time != last_bearish_signal_time)
+bool bullish_signal = bullish_candidate and trend_bull_ok
+bool bearish_signal = bearish_candidate and trend_bear_ok
+
+if bullish_signal
+    add_signal(resistance_time, source_time, resistance_level, source_atr, source_relative_volume, true)
+
+if bearish_signal
+    add_signal(support_time, source_time, support_level, source_atr, source_relative_volume, false)
+
+if bullish_candidate
+    last_bullish_signal_time := source_time
+
+if bearish_candidate
+    last_bearish_signal_time := source_time
+
+alertcondition(bullish_signal, title="Volume Breakout Signals [Aventra] Bullish Signal", message="Volume Breakout Signals [Aventra]: bullish volume breakout detected.")
+alertcondition(bearish_signal, title="Volume Breakout Signals [Aventra] Bearish Signal", message="Volume Breakout Signals [Aventra]: bearish volume breakout detected.")

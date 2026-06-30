@@ -1,0 +1,69 @@
+//@version=6
+// Aventra Version: 1.0.0
+indicator("Volume Pressure [Aventra]", shorttitle="Volume Pressure [Aventra]", overlay=false)
+
+calculation_timeframe = input.timeframe("", "Calculation Timeframe")
+volume_ma_length = input.int(20, "Volume MA Length", minval=1)
+pressure_smoothing = input.int(5, "Pressure Smoothing", minval=1)
+relative_volume_threshold = input.float(1.8, "Relative Volume Spike Threshold", minval=0.1, step=0.1)
+pressure_threshold = input.float(30.0, "Pressure Signal Threshold", minval=0.0, maxval=100.0, step=1.0)
+show_pressure_line = input.bool(true, "Show Smoothed Pressure Line")
+show_relative_volume = input.bool(false, "Show Relative Volume")
+show_spike_markers = input.bool(true, "Show Volume Spike Markers")
+show_signal_labels = input.bool(false, "Show Pressure Signal Labels")
+bullish_color = input.color(color.lime, "Bullish Pressure Color")
+bearish_color = input.color(color.red, "Bearish Pressure Color")
+neutral_color = input.color(color.gray, "Neutral Pressure Color")
+
+use_chart_timeframe = calculation_timeframe == ""
+request_timeframe = use_chart_timeframe ? timeframe.period : calculation_timeframe
+
+calc_volume_pressure() =>
+    float price_range = high - low
+    float close_location = price_range == 0.0 ? 0.5 : (close - low) / price_range
+    float directional_bias = close > open ? 1.0 : close < open ? -1.0 : close_location > 0.5 ? 1.0 : close_location < 0.5 ? -1.0 : 0.0
+    float location_pressure = (close_location - 0.5) * 2.0
+    float raw_pressure = ((directional_bias + location_pressure) / 2.0) * 100.0
+    float volume_average = ta.sma(volume, volume_ma_length)
+    float relative_volume = volume_average == 0.0 ? 0.0 : volume / volume_average
+    float weighted_pressure = raw_pressure * relative_volume
+    float smoothed_pressure = ta.ema(weighted_pressure, pressure_smoothing)
+    [raw_pressure, weighted_pressure, smoothed_pressure, relative_volume, volume_average]
+
+[raw_chart, weighted_chart, smoothed_chart, relvol_chart, vol_ma_chart] = calc_volume_pressure()
+[raw_tf, weighted_tf, smoothed_tf, relvol_tf, vol_ma_tf] = request.security(syminfo.tickerid, request_timeframe, calc_volume_pressure(), barmerge.gaps_off, barmerge.lookahead_off)
+
+raw_pressure = use_chart_timeframe ? raw_chart : raw_tf
+weighted_pressure = use_chart_timeframe ? weighted_chart : weighted_tf
+smoothed_pressure = use_chart_timeframe ? smoothed_chart : smoothed_tf
+relative_volume = use_chart_timeframe ? relvol_chart : relvol_tf
+volume_average = use_chart_timeframe ? vol_ma_chart : vol_ma_tf
+
+bullish_pressure = smoothed_pressure >= pressure_threshold
+bearish_pressure = smoothed_pressure <= -pressure_threshold
+volume_spike = relative_volume >= relative_volume_threshold
+bullish_spike = bullish_pressure and volume_spike
+bearish_spike = bearish_pressure and volume_spike
+bullish_pressure_signal = ta.crossover(smoothed_pressure, pressure_threshold)
+bearish_pressure_signal = ta.crossunder(smoothed_pressure, -pressure_threshold)
+
+pressure_color = smoothed_pressure > 0 ? bullish_color : smoothed_pressure < 0 ? bearish_color : neutral_color
+histogram_color = volume_spike ? color.new(pressure_color, 0) : color.new(pressure_color, 35)
+
+hline(0, "Zero Line", color=color.new(neutral_color, 40))
+hline(pressure_threshold, "Bullish Threshold", color=color.new(bullish_color, 65), linestyle=hline.style_dotted)
+hline(-pressure_threshold, "Bearish Threshold", color=color.new(bearish_color, 65), linestyle=hline.style_dotted)
+
+plot(weighted_pressure, "Volume Pressure Histogram", style=plot.style_columns, color=histogram_color)
+plot(show_pressure_line ? smoothed_pressure : na, "Smoothed Pressure", color=color.white, linewidth=2)
+plot(show_relative_volume ? relative_volume * 10.0 : na, "Relative Volume x10", color=color.new(color.blue, 0), linewidth=1)
+
+plotshape(show_spike_markers and bullish_spike, title="Bullish Volume Spike", text="", style=shape.triangleup, location=location.bottom, color=bullish_color, textcolor=color.black, size=size.tiny)
+plotshape(show_spike_markers and bearish_spike, title="Bearish Volume Spike", text="", style=shape.triangledown, location=location.top, color=bearish_color, textcolor=color.white, size=size.tiny)
+plotshape(show_signal_labels and bullish_pressure_signal, title="Bullish Pressure Signal", text="BULL", style=shape.labelup, location=location.bottom, color=bullish_color, textcolor=color.black, size=size.small)
+plotshape(show_signal_labels and bearish_pressure_signal, title="Bearish Pressure Signal", text="BEAR", style=shape.labeldown, location=location.top, color=bearish_color, textcolor=color.white, size=size.small)
+
+alertcondition(bullish_pressure_signal, title="Volume Pressure [Aventra] Bullish Pressure", message="Volume Pressure [Aventra]: Bullish volume pressure crossed above the threshold.")
+alertcondition(bearish_pressure_signal, title="Volume Pressure [Aventra] Bearish Pressure", message="Volume Pressure [Aventra]: Bearish volume pressure crossed below the threshold.")
+alertcondition(bullish_spike, title="Volume Pressure [Aventra] Bullish Volume Spike", message="Volume Pressure [Aventra]: Bullish pressure with relative volume spike detected.")
+alertcondition(bearish_spike, title="Volume Pressure [Aventra] Bearish Volume Spike", message="Volume Pressure [Aventra]: Bearish pressure with relative volume spike detected.")

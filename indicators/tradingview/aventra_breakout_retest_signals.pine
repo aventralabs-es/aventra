@@ -1,0 +1,227 @@
+//@version=6
+// Aventra Version: 1.2.1
+indicator("Breakout Retest Signals [Aventra]", shorttitle="Breakout Retest Signals [Aventra]", overlay=true, max_lines_count=500, max_labels_count=500, max_boxes_count=200, max_bars_back=5000)
+
+calculation_timeframe = input.timeframe("", "Calculation Timeframe")
+swing_left = input.int(5, "Swing Left Bars", minval=1, maxval=500)
+swing_right = input.int(5, "Swing Right Bars", minval=1, maxval=500)
+retest_window = input.int(20, "Retest Window Bars", minval=1, maxval=500)
+atr_length = input.int(14, "ATR Length", minval=1)
+retest_tolerance_atr = input.float(0.15, "Retest Tolerance ATR", minval=0.0, step=0.01)
+minimum_breakout_atr = input.float(0.10, "Minimum Breakout ATR", minval=0.0, step=0.01)
+confirmation_buffer_atr = input.float(0.05, "Confirmation Buffer ATR", minval=0.0, step=0.01)
+breakout_mode = input.string("Close Break", "Breakout Mode", options=["Close Break", "Wick Break"])
+confirmation_mode = input.string("Balanced", "Confirmation Mode", options=["Aggressive", "Balanced", "Conservative"])
+require_trend_filter = input.bool(false, "Use Trend Filter")
+trend_ma_length = input.int(55, "Trend MA Length", minval=1)
+trend_ma_timeframe = input.timeframe("D", "Trend MA Timeframe")
+show_trend_ma = input.bool(true, "Show Trend MA")
+trend_ma_color = input.color(color.new(color.rgb(33, 150, 243), 30), "Trend MA Color")
+use_volume_filter = input.bool(true, "Use Volume Filter")
+volume_ma_length = input.int(21, "Volume MA Length", minval=1)
+minimum_relative_volume = input.float(1.20, "Minimum Relative Volume", minval=0.0, step=0.05)
+show_signal_markers = input.bool(true, "Show Signal Markers")
+show_signal_labels = input.bool(true, "Show Signal Labels")
+show_breakout_lines = input.bool(true, "Show Breakout Lines")
+show_retest_zones = input.bool(true, "Show Retest Zones")
+keep_signals = input.bool(true, "Keep Signals")
+maximum_signals = input.int(100, "Maximum Signals", minval=1, maxval=250)
+signal_label_offset_atr = input.float(0.35, "Signal Label Offset ATR", minval=0.0, step=0.05)
+bullish_signal_color = input.color(color.new(color.lime, 50), "Bullish Signal Color")
+bearish_signal_color = input.color(color.new(color.red, 50), "Bearish Signal Color")
+bullish_zone_color = input.color(color.new(color.teal, 90), "Bullish Retest Zone Color")
+bearish_zone_color = input.color(color.new(color.orange, 90), "Bearish Retest Zone Color")
+
+use_chart_timeframe = calculation_timeframe == ""
+request_timeframe = use_chart_timeframe ? timeframe.period : calculation_timeframe
+
+calc_breakout_retest_source() =>
+    float atr_value = ta.atr(atr_length)
+    float retest_tolerance = atr_value * retest_tolerance_atr
+    float minimum_breakout = atr_value * minimum_breakout_atr
+    float confirmation_buffer = atr_value * confirmation_buffer_atr
+    float volume_ma = ta.sma(volume, volume_ma_length)
+    float relative_volume = not na(volume_ma) and volume_ma != 0 ? volume / volume_ma : na
+    bool volume_ok = not use_volume_filter or (not na(relative_volume) and relative_volume >= minimum_relative_volume)
+    float pivot_high = ta.pivothigh(high, swing_left, swing_right)
+    float pivot_low = ta.pivotlow(low, swing_left, swing_right)
+    var float resistance_level = na
+    var float support_level = na
+    var int resistance_time = na
+    var int support_time = na
+    var bool bullish_pending = false
+    var bool bearish_pending = false
+    var float bullish_level = na
+    var float bearish_level = na
+    var int bullish_level_time = na
+    var int bearish_level_time = na
+    var int bullish_break_time = na
+    var int bearish_break_time = na
+    var int bullish_break_bar = na
+    var int bearish_break_bar = na
+
+    if not na(pivot_high)
+        resistance_level := pivot_high
+        resistance_time := time[swing_right]
+
+    if not na(pivot_low)
+        support_level := pivot_low
+        support_time := time[swing_right]
+    bool close_break_up = not na(resistance_level) and close > resistance_level and close[1] <= resistance_level
+    bool wick_break_up = not na(resistance_level) and high > resistance_level and high[1] <= resistance_level
+    bool close_break_down = not na(support_level) and close < support_level and close[1] >= support_level
+    bool wick_break_down = not na(support_level) and low < support_level and low[1] >= support_level
+    bool strong_break_up = not na(resistance_level) and (minimum_breakout_atr == 0.0 or close - resistance_level >= minimum_breakout)
+    bool strong_break_down = not na(support_level) and (minimum_breakout_atr == 0.0 or support_level - close >= minimum_breakout)
+    bool bullish_breakout = (breakout_mode == "Close Break" ? close_break_up : wick_break_up) and strong_break_up
+    bool bearish_breakout = (breakout_mode == "Close Break" ? close_break_down : wick_break_down) and strong_break_down
+
+    if bullish_breakout
+        bullish_pending := true
+        bearish_pending := false
+        bullish_level := resistance_level
+        bullish_level_time := resistance_time
+        bullish_break_time := time
+        bullish_break_bar := bar_index
+
+    if bearish_breakout
+        bearish_pending := true
+        bullish_pending := false
+        bearish_level := support_level
+        bearish_level_time := support_time
+        bearish_break_time := time
+        bearish_break_bar := bar_index
+
+    bool bullish_window_open = bullish_pending and not na(bullish_break_bar) and bar_index > bullish_break_bar and bar_index - bullish_break_bar <= retest_window
+    bool bearish_window_open = bearish_pending and not na(bearish_break_bar) and bar_index > bearish_break_bar and bar_index - bearish_break_bar <= retest_window
+    bool bullish_retest_touch = bullish_window_open and low <= bullish_level + retest_tolerance and high >= bullish_level - retest_tolerance
+    bool bearish_retest_touch = bearish_window_open and high >= bearish_level - retest_tolerance and low <= bearish_level + retest_tolerance
+    bool bullish_aggressive = bullish_retest_touch and close > bullish_level
+    bool bearish_aggressive = bearish_retest_touch and close < bearish_level
+    bool bullish_balanced = bullish_retest_touch and close > bullish_level and close > open
+    bool bearish_balanced = bearish_retest_touch and close < bearish_level and close < open
+    bool bullish_conservative = bullish_retest_touch and close > bullish_level + confirmation_buffer and close > open and close > high[1]
+    bool bearish_conservative = bearish_retest_touch and close < bearish_level - confirmation_buffer and close < open and close < low[1]
+    bool bullish_base_signal = confirmation_mode == "Aggressive" ? bullish_aggressive : confirmation_mode == "Balanced" ? bullish_balanced : bullish_conservative
+    bool bearish_base_signal = confirmation_mode == "Aggressive" ? bearish_aggressive : confirmation_mode == "Balanced" ? bearish_balanced : bearish_conservative
+    bool bullish_signal = bullish_base_signal and volume_ok
+    bool bearish_signal = bearish_base_signal and volume_ok
+
+    if bullish_pending and not bullish_window_open and not na(bullish_break_bar) and bar_index - bullish_break_bar > retest_window
+        bullish_pending := false
+
+    if bearish_pending and not bearish_window_open and not na(bearish_break_bar) and bar_index - bearish_break_bar > retest_window
+        bearish_pending := false
+
+    if bullish_signal
+        bullish_pending := false
+
+    if bearish_signal
+        bearish_pending := false
+
+    [bullish_signal, bearish_signal, bullish_level, bearish_level, bullish_level_time, bearish_level_time, bullish_break_time, bearish_break_time, time, time_close, atr_value, retest_tolerance, relative_volume]
+
+[bullish_signal_chart, bearish_signal_chart, bullish_level_chart, bearish_level_chart, bullish_level_time_chart, bearish_level_time_chart, bullish_break_time_chart, bearish_break_time_chart, signal_time_chart, signal_time_close_chart, atr_chart, tolerance_chart, relative_volume_chart] = calc_breakout_retest_source()
+[bullish_signal_tf, bearish_signal_tf, bullish_level_tf, bearish_level_tf, bullish_level_time_tf, bearish_level_time_tf, bullish_break_time_tf, bearish_break_time_tf, signal_time_tf, signal_time_close_tf, atr_tf, tolerance_tf, relative_volume_tf] = request.security(syminfo.tickerid, request_timeframe, calc_breakout_retest_source(), barmerge.gaps_off, barmerge.lookahead_off)
+
+bool bullish_signal_raw = use_chart_timeframe ? bullish_signal_chart : bullish_signal_tf
+bool bearish_signal_raw = use_chart_timeframe ? bearish_signal_chart : bearish_signal_tf
+float bullish_level = use_chart_timeframe ? bullish_level_chart : bullish_level_tf
+float bearish_level = use_chart_timeframe ? bearish_level_chart : bearish_level_tf
+int bullish_level_time = use_chart_timeframe ? bullish_level_time_chart : bullish_level_time_tf
+int bearish_level_time = use_chart_timeframe ? bearish_level_time_chart : bearish_level_time_tf
+int bullish_break_time = use_chart_timeframe ? bullish_break_time_chart : bullish_break_time_tf
+int bearish_break_time = use_chart_timeframe ? bearish_break_time_chart : bearish_break_time_tf
+int source_signal_time = use_chart_timeframe ? signal_time_chart : signal_time_tf
+int source_signal_time_close = use_chart_timeframe ? signal_time_close_chart : signal_time_close_tf
+float source_atr = use_chart_timeframe ? atr_chart : atr_tf
+float source_tolerance = use_chart_timeframe ? tolerance_chart : tolerance_tf
+float source_relative_volume = use_chart_timeframe ? relative_volume_chart : relative_volume_tf
+trend_request_timeframe = trend_ma_timeframe == "" ? timeframe.period : trend_ma_timeframe
+trend_ma_value = request.security(syminfo.tickerid, trend_request_timeframe, ta.ema(close, trend_ma_length), barmerge.gaps_off, barmerge.lookahead_off)
+bool trend_bull_ok = not require_trend_filter or close >= trend_ma_value
+bool trend_bear_ok = not require_trend_filter or close <= trend_ma_value
+
+plot(require_trend_filter and show_trend_ma ? trend_ma_value : na, title="Trend MA", color=trend_ma_color, linewidth=2)
+
+var int last_bullish_signal_time = na
+var int last_bearish_signal_time = na
+var array<line> signal_lines = array.new<line>()
+var array<label> signal_markers = array.new<label>()
+var array<label> signal_labels = array.new<label>()
+var array<box> retest_zones = array.new<box>()
+
+safe_delete_line(line _line) =>
+    if not na(_line)
+        line.delete(_line)
+
+safe_delete_label(label _label) =>
+    if not na(_label)
+        label.delete(_label)
+
+safe_delete_box(box _box) =>
+    if not na(_box)
+        box.delete(_box)
+
+clear_signals() =>
+    while array.size(signal_lines) > 0
+        safe_delete_line(array.shift(signal_lines))
+    while array.size(signal_markers) > 0
+        safe_delete_label(array.shift(signal_markers))
+    while array.size(signal_labels) > 0
+        safe_delete_label(array.shift(signal_labels))
+    while array.size(retest_zones) > 0
+        safe_delete_box(array.shift(retest_zones))
+
+trim_signals() =>
+    while array.size(signal_lines) > maximum_signals
+        safe_delete_line(array.shift(signal_lines))
+    while array.size(signal_markers) > maximum_signals
+        safe_delete_label(array.shift(signal_markers))
+    while array.size(signal_labels) > maximum_signals
+        safe_delete_label(array.shift(signal_labels))
+    while array.size(retest_zones) > maximum_signals
+        safe_delete_box(array.shift(retest_zones))
+
+add_signal(int _level_time, int _break_time, int _signal_time, int _signal_time_close, float _level, float _tolerance, float _atr, float _relative_volume, bool _bullish) =>
+    if not keep_signals
+        clear_signals()
+    color signal_color = _bullish ? bullish_signal_color : bearish_signal_color
+    color zone_color = _bullish ? bullish_zone_color : bearish_zone_color
+    string base_label_text = _bullish ? "Bullish Retest" : "Bearish Retest"
+    string rel_vol_text = use_volume_filter and not na(_relative_volume) ? " | Rel Vol " + str.tostring(_relative_volume, "#.##") + "x" : ""
+    string label_text = base_label_text + rel_vol_text
+    line level_line = show_breakout_lines and not na(_level_time) and not na(_signal_time) and not na(_level) ? line.new(_level_time, _level, _signal_time, _level, xloc=xloc.bar_time, extend=extend.none, color=signal_color, width=2, style=line.style_solid) : na
+    box retest_box = show_retest_zones and not na(_break_time) and not na(_signal_time_close) and not na(_level) and not na(_tolerance) ? box.new(_break_time, _level + _tolerance, _signal_time_close, _level - _tolerance, xloc=xloc.bar_time, border_color=color.new(zone_color, 100), bgcolor=zone_color) : na
+    label marker = show_signal_markers and not na(_signal_time) and not na(_level) ? label.new(_signal_time, _level, "", xloc=xloc.bar_time, style=_bullish ? label.style_triangleup : label.style_triangledown, color=signal_color, textcolor=signal_color, size=size.tiny) : na
+    float label_offset = _atr * signal_label_offset_atr
+    float label_y = _bullish ? _level - label_offset : _level + label_offset
+    label signal_label = show_signal_labels and not na(_signal_time) and not na(_level) ? label.new(_signal_time, label_y, label_text, xloc=xloc.bar_time, style=_bullish ? label.style_label_up : label.style_label_down, color=color.new(signal_color, 100), textcolor=signal_color, size=size.small) : na
+    array.push(signal_lines, level_line)
+    array.push(signal_markers, marker)
+    array.push(signal_labels, signal_label)
+    array.push(retest_zones, retest_box)
+    trim_signals()
+
+bool both_signals = bullish_signal_raw and bearish_signal_raw
+bool prefer_bullish = both_signals ? close > open : bullish_signal_raw
+bool prefer_bearish = both_signals ? close <= open : bearish_signal_raw
+bool bullish_candidate = bullish_signal_raw and (not both_signals or prefer_bullish) and (na(last_bullish_signal_time) or source_signal_time != last_bullish_signal_time)
+bool bearish_candidate = bearish_signal_raw and (not both_signals or prefer_bearish) and (na(last_bearish_signal_time) or source_signal_time != last_bearish_signal_time)
+bool bullish_signal = bullish_candidate and trend_bull_ok
+bool bearish_signal = bearish_candidate and trend_bear_ok
+
+if bullish_signal
+    add_signal(bullish_level_time, bullish_break_time, source_signal_time, source_signal_time_close, bullish_level, source_tolerance, source_atr, source_relative_volume, true)
+
+if bearish_signal
+    add_signal(bearish_level_time, bearish_break_time, source_signal_time, source_signal_time_close, bearish_level, source_tolerance, source_atr, source_relative_volume, false)
+
+if bullish_candidate
+    last_bullish_signal_time := source_signal_time
+
+if bearish_candidate
+    last_bearish_signal_time := source_signal_time
+
+alertcondition(bullish_signal, title="Breakout Retest Signals [Aventra] Bullish Signal", message="Breakout Retest Signals [Aventra]: bullish breakout retest confirmed.")
+alertcondition(bearish_signal, title="Breakout Retest Signals [Aventra] Bearish Signal", message="Breakout Retest Signals [Aventra]: bearish breakout retest confirmed.")

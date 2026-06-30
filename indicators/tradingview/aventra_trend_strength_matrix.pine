@@ -1,0 +1,97 @@
+//@version=6
+// Aventra Version: 1.0.0
+indicator("Trend Strength Matrix [Aventra]", shorttitle="Trend Strength Matrix [Aventra]", overlay=true)
+
+source = input.source(close, "Source")
+calculation_timeframe = input.timeframe("", "Calculation Timeframe")
+fast_length = input.int(21, "Fast EMA Length", minval=1)
+slow_length = input.int(55, "Slow EMA Length", minval=1)
+rsi_length = input.int(14, "RSI Length", minval=1)
+rsi_bullish_level = input.float(55.0, "RSI Bullish Level", minval=0.0, maxval=100.0, step=0.5)
+rsi_bearish_level = input.float(45.0, "RSI Bearish Level", minval=0.0, maxval=100.0, step=0.5)
+adx_length = input.int(14, "ADX Length", minval=1)
+adx_smoothing = input.int(14, "ADX Smoothing", minval=1)
+minimum_adx = input.float(18.0, "Minimum ADX", minval=0.0, step=0.5)
+use_atr_filter = input.bool(false, "Use ATR Volatility Filter")
+atr_length = input.int(14, "ATR Length", minval=1)
+minimum_atr_percent = input.float(0.5, "Minimum ATR %", minval=0.0, step=0.1)
+minimum_score = input.int(2, "Minimum Trend Score", minval=1, maxval=3)
+show_trend_labels = input.bool(true, "Show Trend Change Labels")
+color_bars = input.bool(true, "Color Bars by Trend")
+show_background = input.bool(false, "Show Trend Background")
+show_matrix_table = input.bool(true, "Show Matrix Table")
+
+use_chart_timeframe = calculation_timeframe == ""
+request_timeframe = use_chart_timeframe ? timeframe.period : calculation_timeframe
+
+calc_matrix() =>
+    float fast_ema = ta.ema(source, fast_length)
+    float slow_ema = ta.ema(source, slow_length)
+    float rsi_value = ta.rsi(source, rsi_length)
+    [plus_di, minus_di, adx_value] = ta.dmi(adx_length, adx_smoothing)
+    float atr_percent = ta.atr(atr_length) / close * 100.0
+    [fast_ema, slow_ema, rsi_value, plus_di, minus_di, adx_value, atr_percent]
+
+[fast_chart, slow_chart, rsi_chart, plus_di_chart, minus_di_chart, adx_chart, atr_percent_chart] = calc_matrix()
+[fast_tf, slow_tf, rsi_tf, plus_di_tf, minus_di_tf, adx_tf, atr_percent_tf] = request.security(syminfo.tickerid, request_timeframe, calc_matrix(), barmerge.gaps_off, barmerge.lookahead_off)
+
+fast_ema = use_chart_timeframe ? fast_chart : fast_tf
+slow_ema = use_chart_timeframe ? slow_chart : slow_tf
+rsi_value = use_chart_timeframe ? rsi_chart : rsi_tf
+plus_di = use_chart_timeframe ? plus_di_chart : plus_di_tf
+minus_di = use_chart_timeframe ? minus_di_chart : minus_di_tf
+adx_value = use_chart_timeframe ? adx_chart : adx_tf
+atr_percent = use_chart_timeframe ? atr_percent_chart : atr_percent_tf
+
+ma_score = fast_ema > slow_ema ? 1 : fast_ema < slow_ema ? -1 : 0
+rsi_score = rsi_value >= rsi_bullish_level ? 1 : rsi_value <= rsi_bearish_level ? -1 : 0
+dmi_score = adx_value >= minimum_adx ? (plus_di > minus_di ? 1 : plus_di < minus_di ? -1 : 0) : 0
+trend_score = ma_score + rsi_score + dmi_score
+volatility_ok = not use_atr_filter or atr_percent >= minimum_atr_percent
+
+bullish_trend = volatility_ok and trend_score >= minimum_score
+bearish_trend = volatility_ok and trend_score <= -minimum_score
+neutral_trend = not bullish_trend and not bearish_trend
+
+trend_state = bullish_trend ? 1 : bearish_trend ? -1 : 0
+bullish_start = trend_state == 1 and trend_state[1] != 1
+bearish_start = trend_state == -1 and trend_state[1] != -1
+neutral_start = trend_state == 0 and trend_state[1] != 0
+
+bullish_color = color.lime
+bearish_color = color.red
+neutral_color = color.gray
+trend_color = bullish_trend ? bullish_color : bearish_trend ? bearish_color : neutral_color
+background_color = bullish_trend ? color.new(bullish_color, 88) : bearish_trend ? color.new(bearish_color, 88) : color.new(neutral_color, 92)
+
+fast_plot = plot(fast_ema, "Fast EMA", color=color.new(color.teal, 0), linewidth=2)
+slow_plot = plot(slow_ema, "Slow EMA", color=color.new(color.orange, 0), linewidth=2)
+fill(fast_plot, slow_plot, color=bullish_trend ? color.new(bullish_color, 85) : bearish_trend ? color.new(bearish_color, 85) : color.new(neutral_color, 90), title="Trend Fill")
+
+plotshape(show_trend_labels and bullish_start, title="Bullish Trend Signal", text="BULLISH", style=shape.labelup, location=location.belowbar, color=bullish_color, textcolor=color.black, size=size.small)
+plotshape(show_trend_labels and bearish_start, title="Bearish Trend Signal", text="BEARISH", style=shape.labeldown, location=location.abovebar, color=bearish_color, textcolor=color.white, size=size.small)
+plotshape(show_trend_labels and neutral_start, title="Neutral Trend Signal", text="NEUTRAL", style=shape.circle, location=location.top, color=neutral_color, textcolor=color.white, size=size.tiny)
+
+barcolor(color_bars ? color.new(trend_color, 65) : na)
+bgcolor(show_background ? background_color : na)
+
+var table matrix_table = table.new(position.top_right, 2, 6, border_width=1)
+if show_matrix_table and barstate.islast
+    string trend_text = bullish_trend ? "Bullish" : bearish_trend ? "Bearish" : "Neutral"
+    table.cell(matrix_table, 0, 0, "Trend", text_color=color.white, bgcolor=color.new(color.black, 0))
+    table.cell(matrix_table, 1, 0, trend_text, text_color=color.white, bgcolor=color.new(trend_color, 15))
+    table.cell(matrix_table, 0, 1, "Score", text_color=color.white, bgcolor=color.new(color.black, 0))
+    table.cell(matrix_table, 1, 1, str.tostring(trend_score), text_color=color.white, bgcolor=color.new(trend_color, 35))
+    table.cell(matrix_table, 0, 2, "RSI", text_color=color.white, bgcolor=color.new(color.black, 0))
+    table.cell(matrix_table, 1, 2, str.tostring(rsi_value, "#.##"), text_color=color.white, bgcolor=color.new(color.black, 35))
+    table.cell(matrix_table, 0, 3, "ADX", text_color=color.white, bgcolor=color.new(color.black, 0))
+    table.cell(matrix_table, 1, 3, str.tostring(adx_value, "#.##"), text_color=color.white, bgcolor=color.new(color.black, 35))
+    table.cell(matrix_table, 0, 4, "ATR %", text_color=color.white, bgcolor=color.new(color.black, 0))
+    table.cell(matrix_table, 1, 4, str.tostring(atr_percent, "#.##"), text_color=color.white, bgcolor=color.new(color.black, 35))
+    table.cell(matrix_table, 0, 5, "Volatility", text_color=color.white, bgcolor=color.new(color.black, 0))
+    table.cell(matrix_table, 1, 5, volatility_ok ? "OK" : "Low", text_color=color.white, bgcolor=volatility_ok ? color.new(color.green, 35) : color.new(color.gray, 35))
+
+alertcondition(bullish_start, title="Trend Strength Matrix [Aventra] Bullish Trend", message="Trend Strength Matrix [Aventra]: Bullish trend state started.")
+alertcondition(bearish_start, title="Trend Strength Matrix [Aventra] Bearish Trend", message="Trend Strength Matrix [Aventra]: Bearish trend state started.")
+alertcondition(neutral_start, title="Trend Strength Matrix [Aventra] Neutral Trend", message="Trend Strength Matrix [Aventra]: Trend state turned neutral.")
+
