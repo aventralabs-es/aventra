@@ -1,4 +1,12 @@
-# Aventra Roadmap
+﻿# Aventra Roadmap
+
+## Completed Milestones
+
+- Created an initial public website page with the indicator catalog.
+- Added Aventra logo to the website.
+- Added social media links to the website.
+- Updated social media profiles with Aventra bio, website link, and logo.
+- Submitted the website to Google Search.
 
 ## Phase 1: TradingView Public Portfolio
 
@@ -28,9 +36,9 @@
 - Prefer platform marketplaces for paid distribution and license handling.
 - Use the website as the central documentation and support hub.
 
-## Phase 5: Setup Radar
+## Phase 5: Market Radar
 
-- Build a setup/pattern search product rather than a direct trade recommendation service.
+- Build Aventra Market Radar as a setup/pattern search product rather than a direct trade recommendation service.
 - Focus on detected technical conditions, watchlist candidates, and educational scenarios.
 - Potential setup types:
   - Breakout Retest
@@ -40,3 +48,4 @@
   - Trend Continuation
   - Liquidity Sweep
   - Premium/Discount Context
+
