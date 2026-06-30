@@ -184,6 +184,40 @@
     </article>
   </div>
 
+  <h2>Example Strategy: Support Rejection Continuation</h2>
+  <p>This example shows how candlestick patterns can be used inside a complete decision process. The goal is not to buy every hammer or bullish engulfing candle. The goal is to wait for a meaningful location, a clear rejection pattern, and confirmation that buyers are actually following through.</p>
+  <div class="article-visual strategy-visual">
+    <div class="visual-heading">
+      <strong>Example: Support rejection with confirmation</strong>
+      <span>A candle pattern becomes more useful when it appears at support, rejects lower prices, and is followed by a breakout above the signal candle.</span>
+    </div>
+    <svg viewBox="0 0 760 340" role="img" aria-label="Candlestick strategy example with support rejection and breakout confirmation">
+      <path class="example-grid" d="M40 70H720M40 150H720M40 230H720"></path>
+      <rect class="support-zone" x="78" y="226" width="608" height="38"></rect>
+      <path class="example-price thin" d="M70 88 C118 112 142 96 184 128 C232 164 252 150 294 194 C332 236 366 250 410 226 C452 202 468 216 508 178 C552 136 578 156 620 112 C654 80 680 96 712 68"></path>
+      <path class="ma-fast" d="M70 104 C130 122 178 136 230 160 C292 190 350 222 410 226 C468 222 524 176 584 132 C632 98 674 82 712 72"></path>
+      <g class="candles">
+        <line x1="332" y1="190" x2="332" y2="260"></line><rect class="bear" x="321" y="206" width="22" height="34"></rect>
+        <line x1="382" y1="196" x2="382" y2="276"></line><rect class="bull" x="371" y="218" width="22" height="24"></rect>
+        <line x1="432" y1="184" x2="432" y2="252"></line><rect class="bull" x="421" y="198" width="22" height="40"></rect>
+        <line x1="482" y1="166" x2="482" y2="226"></line><rect class="bull" x="471" y="178" width="22" height="34"></rect>
+      </g>
+      <path class="breakout-zone" d="M410 196H508"></path>
+      <circle class="example-point bullish" cx="432" cy="198" r="8"></circle>
+      <text x="92" y="286">Support zone</text>
+      <text x="404" y="184">Confirmation close</text>
+      <text x="520" y="136">Trend continuation</text>
+    </svg>
+    <p>The setup starts with price pulling back into support. A rejection candle shows that sellers failed to keep price below the zone. The confirmation candle then closes above the rejection candle high, showing that buyers followed through.</p>
+  </div>
+  <div class="pattern-rules">
+    <span><strong>Context:</strong> price is in an existing uptrend or recovering from a clear support area, not drifting randomly in the middle of a range.</span>
+    <span><strong>Trigger:</strong> a hammer, bullish pin bar, or bullish engulfing candle forms at support after a pullback or liquidity sweep.</span>
+    <span><strong>Confirmation:</strong> the next candle closes above the pattern high, or price breaks a short-term pullback line with stronger volume.</span>
+    <span><strong>Invalidation:</strong> the idea weakens if price closes back below the support zone or below the low of the rejection candle.</span>
+  </div>
+  <p>A simple execution model would be: identify support, wait for a rejection candle, enter only after confirmation above the signal candle high, place risk below the rejection low or support zone, and evaluate the first target near the next resistance area. This keeps the candle pattern inside a structured plan instead of treating it as a standalone prediction.</p>
+  <p>The bearish version is the mirror image: price rallies into resistance, forms a shooting star or bearish engulfing candle, confirms with a close below the pattern low, and becomes invalid if price reclaims the resistance zone.</p>
   <h2>How Traders Evaluate Candle Patterns</h2>
   <p>The pattern is only one layer. Traders usually check whether it forms at a meaningful level, whether volume confirms the reaction, whether the next candles follow through, and whether the higher-timeframe context agrees.</p>
 
@@ -202,5 +236,6 @@
     </footer>
   </body>
 </html>
+
 
 
