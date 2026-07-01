@@ -1,4 +1,4 @@
-﻿# Aventra Roadmap
+# Aventra Roadmap
 
 ## Completed Milestones
 
@@ -50,6 +50,10 @@ Source of truth: `docs/market-radar-architecture.md`.
 - Initial stock exchanges: NASDAQ, NYSE, and BIST.
 - Initial scan universes: NASDAQ 100 / NQ, S&P 500, and BIST 100.
 - Use provider-ingested OHLCV data stored in an Aventra-controlled database before running scanner logic.
+- Start US-first with Massive Stocks Starter, then add BIST through a BIST-capable provider after scanner logic is stable.
+- Develop ingestion locally as standalone Node/TypeScript worker commands before choosing Vercel Cron, VPS cron, or a worker queue.
+- Schedule exchange, symbol, fundamental, corporate action, candle, and scanner jobs independently by data frequency and market calendar.
+- Future data enhancement: add Massive trades ingestion when package access is available, then derive volume-profile/liquidity-gap features from `massive.trades` into canonical scanner tables.
 - Potential setup types:
   - Breakout Retest
   - MA Pullback
@@ -58,6 +62,10 @@ Source of truth: `docs/market-radar-architecture.md`.
   - Trend Continuation
   - Liquidity Sweep
   - Premium/Discount Context
+
+
+
+
 
 
 
